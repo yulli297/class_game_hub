@@ -139,7 +139,7 @@ const hero = sub => `<div class="hero"><div class="emblem"></div><h1 class="titl
 
 function renderClasses() {
   socket.emit('classes', null, list => {
-    app.innerHTML = `<div class="screen">${hero('소수 나눗셈의 미궁에 도전하라')}
+    app.innerHTML = `<div class="screen">${hero('비례식의 미궁에 도전하라')}
       <div class="panel"><h2 class="title" style="font-size:clamp(20px,4vh,32px);margin-bottom:2vh">우리 반을 골라 주세요</h2>
       <div class="class-list">${list.length ? list.map(c => `<button class="class-btn" data-code="${esc(c.code)}">${esc(c.code)}</button>`).join('') : '<p class="sub">아직 열린 반이 없어요. 선생님을 기다려 주세요.</p>'}</div>
       <div class="row" style="margin-top:2.4vh"><button class="btn dark" id="refresh">새로고침</button></div></div></div>`;
@@ -224,10 +224,10 @@ window.addEventListener('resize', () => { if ($('#pad')) initPad(); });
 function renderProblem() {
   const p = S.problem; if (!p) return;
   const answer = p.options
-    ? `<div class="opts">${p.options.map((svg, i) => `<button class="opt" data-i="${i}"><span class="no">${'①②③④'[i]}</span>${svg}</button>`).join('')}</div>`
+    ? `<div class="opts ${p.options.some(o => o.replace(/<[^>]+>/g, '').length > 9) ? 'wide' : ''}">${p.options.map((svg, i) => `<button class="opt" data-i="${i}"><span class="no">${'①②③④'[i]}</span>${svg}</button>`).join('')}</div>`
     : `<div class="ans"><input id="in" inputmode="decimal" autocomplete="off" placeholder="?"><span>${esc(p.unit)}</span><button class="btn" id="ok">확인</button></div>`;
   if (scratch.pid !== p.id) { scratch.pid = p.id; scratch.strokes = []; }   // 새 문제면 연습장을 비움 (같은 문제에서 오답 후 다시 그려져도 유지)
-  const noFig = p.type === 'compare' || p.type === 'point';   // 그림이 필요 없는 문제는 그림 칸을 빼고 연습장을 넓게 (여러 식을 계산해야 해서)
+  const noFig = !p.figs || !p.figs.length;   // 그림이 없는 문제(선택형 등)는 그림 칸을 빼고 연습장을 넓게 (여러 식을 계산해야 해서)
   const lefty = !!store.get('lefty');   // 왼손잡이 설정은 이 기기에 기억해 둠 (연습장이 왼쪽으로 옴)
   app.innerHTML = topbar() + `<div class="screen"><div class="problem-wrap pad ${noFig ? 'nofig' : ''} ${lefty ? 'lefty' : ''}">
     ${noFig ? '' : `<div class="panel figs-panel"><div class="figs ${p.figs.length > 2 ? 'many' : p.figs.length === 2 ? 'two' : ''}">${p.figs.map(f => `<div class="fig">${f.svg}<div class="cap">${esc(f.cap)}</div></div>`).join('')}</div></div>`}
