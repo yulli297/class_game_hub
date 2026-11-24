@@ -21,12 +21,36 @@ function setBg(n) { if (bgNow === n) return; bgNow = n; $('#bg').style.backgroun
 function nextProblemBg() { const pool = [1, 2, 3].filter(n => n !== bgNow); setBg(pool[Math.floor(Math.random() * pool.length)]); }
 ['/img/maze2', '/img/maze3', '/img/maze4', '/img/board', '/img/cardback'].forEach(src => { const i = new Image(); i.src = src; });
 
-// 휴대폰·태블릿이면 전체 화면 + 가로 고정 시도 (지원하는 기기에서만 동작)
+// ---------- 화면 높이: 주소창·네비게이션 바를 뺀 "실제로 보이는" 높이로 맞춤 ----------
+function fitHeight() { document.documentElement.style.setProperty('--vh', (window.innerHeight / 100) + 'px'); }
+fitHeight();
+window.addEventListener('resize', fitHeight);
+window.addEventListener('orientationchange', () => setTimeout(fitHeight, 300));
+
+// ---------- 전체 화면: 휴대폰·태블릿에서 화면을 누를 때마다 전체 화면이 아니면 다시 켬 ----------
+const FS_EL = document.documentElement;
+const isTouchDevice = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+const canFullscreen = !!(FS_EL.requestFullscreen || FS_EL.webkitRequestFullscreen);
+const isFullscreen = () => !!(document.fullscreenElement || document.webkitFullscreenElement)
+  || matchMedia('(display-mode: fullscreen)').matches;
+let swallowClick = false;
 function tryLandscape() {
-  if (!matchMedia('(pointer: coarse)').matches) return;
-  const el = document.documentElement;
-  try { const p = el.requestFullscreen ? el.requestFullscreen() : null; if (p && p.then) p.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {}); } catch (e) {}
+  if (!isTouchDevice || !canFullscreen || isFullscreen()) return false;
+  try {
+    const p = FS_EL.requestFullscreen ? FS_EL.requestFullscreen({ navigationUI: 'hide' }) : FS_EL.webkitRequestFullscreen();
+    if (p && p.then) p.then(() => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {})).catch(() => {});
+  } catch (e) { return false; }
+  return true;
 }
+// 전체 화면으로 바뀌는 순간 화면 크기가 달라져 엉뚱한 카드가 눌리지 않도록, 그 한 번의 터치는 무시함
+document.addEventListener('pointerdown', () => {
+  if (tryLandscape()) { swallowClick = true; setTimeout(() => { swallowClick = false; }, 700); }
+}, true);
+document.addEventListener('click', e => {
+  if (!swallowClick) return;
+  swallowClick = false; e.preventDefault(); e.stopPropagation();
+}, true);
+['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => document.addEventListener(ev, () => setTimeout(fitHeight, 100)));
 
 const TYPE_KR = { attack: '공격', defense: '방어', skill: '스킬' };
 function cardHTML(id, { cls = '', attrs = '' } = {}) {
@@ -104,7 +128,7 @@ function showDeck() {
   const extra = CONFIG.DECK_SIZE - S.deck.length;
   modal(`<h2>내 카드 (${S.deck.length}/${CONFIG.DECK_SIZE})</h2>
     <div class="deck-grid">${S.deck.map(id => cardHTML(id)).join('')}${Array.from({ length: Math.max(0, extra) }, () => backHTML('', 'style="opacity:.35"')).join('')}</div>
-    <div class="row" style="margin-top:2.4vh"><button class="btn" data-close>닫기</button></div>`);
+    <div class="row" style="margin-top:calc(var(--vh)*2.4)"><button class="btn" data-close>닫기</button></div>`);
 }
 $('#deckBtn').onclick = showDeck;
 
@@ -140,9 +164,9 @@ const hero = sub => `<div class="hero"><div class="emblem"></div><h1 class="titl
 function renderClasses() {
   socket.emit('classes', null, list => {
     app.innerHTML = `<div class="screen">${hero('비례식의 미궁에 도전하라')}
-      <div class="panel"><h2 class="title" style="font-size:clamp(20px,4vh,32px);margin-bottom:2vh">우리 반을 골라 주세요</h2>
+      <div class="panel"><h2 class="title" style="font-size:clamp(20px,calc(var(--vh)*4),32px);margin-bottom:calc(var(--vh)*2)">우리 반을 골라 주세요</h2>
       <div class="class-list">${list.length ? list.map(c => `<button class="class-btn" data-code="${esc(c.code)}">${esc(c.code)}</button>`).join('') : '<p class="sub">아직 열린 반이 없어요. 선생님을 기다려 주세요.</p>'}</div>
-      <div class="row" style="margin-top:2.4vh"><button class="btn dark" id="refresh">새로고침</button></div></div></div>`;
+      <div class="row" style="margin-top:calc(var(--vh)*2.4)"><button class="btn dark" id="refresh">새로고침</button></div></div></div>`;
     app.querySelectorAll('[data-code]').forEach(b => b.onclick = () => { tryLandscape(); local.code = b.dataset.code; local.screen = 'numbers'; render(); });
     $('#refresh').onclick = render;
   });
@@ -152,7 +176,7 @@ function renderNumbers() {
     if (!list) { local.screen = 'classes'; return render(); }
     app.innerHTML = `<div class="screen">${hero(esc(local.code) + ' · 내 번호를 눌러 주세요')}
       <div class="panel"><div class="num-grid">${list.map(s => `<button class="num" data-n="${s.num}" ${s.online ? 'disabled' : ''}>${s.num}<small>${s.online ? '접속 중' : s.cards > 6 ? s.cards + '장' : ''}</small></button>`).join('')}</div>
-      <div class="row" style="margin-top:2.4vh"><button class="btn dark" id="back">반 다시 고르기</button></div></div></div>`;
+      <div class="row" style="margin-top:calc(var(--vh)*2.4)"><button class="btn dark" id="back">반 다시 고르기</button></div></div></div>`;
     app.querySelectorAll('[data-n]').forEach(b => b.onclick = () => {
       tryLandscape();
       const L = { code: local.code, num: Number(b.dataset.n) };
@@ -163,9 +187,9 @@ function renderNumbers() {
 }
 function renderLobby() {
   app.innerHTML = `<div class="screen">${hero(`${esc(S.code)} ${S.num}번 모험가, 미궁의 입구에 섰습니다.`)}
-    <div class="panel center-panel"><p class="sub" style="font-size:clamp(16px,3vh,24px)">${isGame() ? '카드를 한 장씩 골라' : '문제를 풀 때마다 카드를 얻고'}<br>18장의 덱으로 친구와 겨루세요.</p>
+    <div class="panel center-panel"><p class="sub" style="font-size:clamp(16px,calc(var(--vh)*3),24px)">${isGame() ? '카드를 한 장씩 골라' : '문제를 풀 때마다 카드를 얻고'}<br>18장의 덱으로 친구와 겨루세요.</p>
     <button class="btn huge" id="go">모험 시작</button>
-    <div class="row" style="margin-top:3vh"><button class="btn dark" id="out">번호 바꾸기</button></div></div></div>`;
+    <div class="row" style="margin-top:calc(var(--vh)*3)"><button class="btn dark" id="out">번호 바꾸기</button></div></div></div>`;
   $('#go').onclick = () => { tryLandscape(); modal(howtoGame(), () => socket.emit('start')); };
   $('#out').onclick = () => { store.del('login'); location.reload(); };
 }
@@ -252,9 +276,9 @@ function renderProblem() {
     $('#ok').onclick = go; inp.onkeydown = e => { if (e.key === 'Enter') go(); }; }
 }
 function renderOffer() {
-  app.innerHTML = topbar() + `<div class="screen" style="flex-direction:column;gap:3vh">
-    <h1 class="title" style="font-size:clamp(28px,6vh,52px)">${isGame() ? '카드를 한 장 고르세요' : '정답! 보상을 고르세요'}</h1>
-    <div class="cards-row" style="gap:3vw">${S.offer.map((id, i) => cardHTML(id, { cls: 'pick draw-in', attrs: `data-i="${i}" style="--w:min(19vw,40vh);animation-delay:${i * 0.12}s"` })).join('')}</div>
+  app.innerHTML = topbar() + `<div class="screen" style="flex-direction:column;gap:calc(var(--vh)*3)">
+    <h1 class="title" style="font-size:clamp(28px,calc(var(--vh)*6),52px)">${isGame() ? '카드를 한 장 고르세요' : '정답! 보상을 고르세요'}</h1>
+    <div class="cards-row" style="gap:3vw">${S.offer.map((id, i) => cardHTML(id, { cls: 'pick draw-in', attrs: `data-i="${i}" style="--w:min(19vw,calc(var(--vh)*40));animation-delay:${i * 0.12}s"` })).join('')}</div>
     <p class="sub">카드를 누르면 덱에 들어가요</p></div>`;
   app.querySelectorAll('.card.pick').forEach(el => el.onclick = () => socket.emit('pick', { index: Number(el.dataset.i) }));
 }
@@ -270,10 +294,10 @@ function renderReady() {
 function renderQueue() {
   const q = S.queue || { waiting: 0, online: 0 };
   app.innerHTML = topbar() + `<div class="screen"><div class="panel center-panel">
-    <h1 class="title" style="font-size:clamp(26px,5.5vh,46px)">결투장 문 앞에서 대기 중…</h1>
+    <h1 class="title" style="font-size:clamp(26px,calc(var(--vh)*5.5),46px)">결투장 문 앞에서 대기 중…</h1>
     <p class="sub">접속한 친구들이 모두 덱을 완성하면 무작위로 상대가 정해져요.</p>
-    <div class="title" style="font-size:clamp(40px,10vh,80px)">${q.waiting} / ${q.online}</div>
-    <div class="row" style="margin-top:3vh"><button class="btn dark" id="lv">대기 취소</button></div></div></div>`;
+    <div class="title" style="font-size:clamp(40px,calc(var(--vh)*10),80px)">${q.waiting} / ${q.online}</div>
+    <div class="row" style="margin-top:calc(var(--vh)*3)"><button class="btn dark" id="lv">대기 취소</button></div></div></div>`;
   $('#lv').onclick = () => socket.emit('leaveQueue');
 }
 
@@ -324,7 +348,7 @@ function renderBattle() {
   }
   const hitMe = rv && rv.me.dmgTaken && anim.floats === true && !anim.hitDone ? 'hit' : '';
   const hitOp = rv && rv.op.dmgTaken && !anim.hitDone ? 'hit' : ''; if (rv) anim.hitDone = true;
-  const selCard = selected !== null && me.hand[selected] ? cardHTML(me.hand[selected], { attrs: 'style="--w:min(15vw,34vh)"' }) : '';
+  const selCard = selected !== null && me.hand[selected] ? cardHTML(me.hand[selected], { attrs: 'style="--w:min(15vw,calc(var(--vh)*34))"' }) : '';
 
   app.innerHTML = `<div class="arena">
     <div class="side"><h3>전투 기록</h3><div class="log">${blog.items.slice(0, 7).map(x => `<div><b>${x.turn}턴</b> 나: ${esc(x.me)}<br>상대: ${esc(x.op)}<br>${x.gave ? `준 피해 ${x.gave} ` : ''}${x.got ? `받은 피해 ${x.got}` : ''}</div>`).join('') || '<div>아직 기록이 없어요.</div>'}</div></div>
@@ -376,10 +400,10 @@ function renderInherit() {
   const acq = S.acquired, need = Math.min(CONFIG.KEEP_COUNT, acq.length);
   const picked = new Set();
   const draw = () => {
-    app.innerHTML = `<div class="screen" style="flex-direction:column;gap:1.6vh;padding-top:2vh">
-      <h1 class="title" style="font-size:clamp(22px,4.6vh,38px)">다음 모험에 가져갈 카드 ${need}장 (${picked.size}/${need})</h1>
+    app.innerHTML = `<div class="screen" style="flex-direction:column;gap:calc(var(--vh)*1.6);padding-top:calc(var(--vh)*2)">
+      <h1 class="title" style="font-size:clamp(22px,calc(var(--vh)*4.6),38px)">다음 모험에 가져갈 카드 ${need}장 (${picked.size}/${need})</h1>
       <p class="sub" style="margin:0">기본 카드 6장과 고른 ${need}장을 들고, ${isGame() ? `카드 ${CONFIG.DECK_SIZE - BASE.length - need}장을 더 골라` : `문제 ${CONFIG.DECK_SIZE - BASE.length - need}개를 더 풀어`} 덱을 완성해요.</p>
-      <div class="deck-grid">${acq.map((id, i) => cardHTML(id, { cls: 'pick' + (picked.has(i) ? ' sel' : ''), attrs: `data-i="${i}" style="--w:min(11vw,24vh)"` })).join('')}</div>
+      <div class="deck-grid">${acq.map((id, i) => cardHTML(id, { cls: 'pick' + (picked.has(i) ? ' sel' : ''), attrs: `data-i="${i}" style="--w:min(11vw,calc(var(--vh)*24))"` })).join('')}</div>
       <button class="btn huge" id="done" ${picked.size === need ? '' : 'disabled'}>선택 완료</button></div>`;
     app.querySelectorAll('.card.pick').forEach(el => el.onclick = () => { const i = Number(el.dataset.i);
       if (picked.has(i)) picked.delete(i); else if (picked.size < need) picked.add(i); draw(); });
