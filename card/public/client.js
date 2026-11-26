@@ -1,7 +1,7 @@
 // =============================================================
 //  학생 화면 (가로 화면 전용)
 // =============================================================
-const socket = io();
+const socket = io('/card');   // 카드게임 전용 연결 통로
 const $ = s => document.querySelector(s);
 const app = $('#app');
 let CARDS = {}, CONFIG = {}, BASE = [];
@@ -17,9 +17,9 @@ const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } cat
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
 
 // ---------- 배경: 미로 1~3은 문제 풀이 때 돌아가며, 4는 대기열 ----------
-function setBg(n) { if (bgNow === n) return; bgNow = n; $('#bg').style.backgroundImage = `url('/img/maze${n}')`; }
+function setBg(n) { if (bgNow === n) return; bgNow = n; $('#bg').style.backgroundImage = `url('img/maze${n}')`; }
 function nextProblemBg() { const pool = [1, 2, 3].filter(n => n !== bgNow); setBg(pool[Math.floor(Math.random() * pool.length)]); }
-['/img/maze2', '/img/maze3', '/img/maze4', '/img/board', '/img/cardback'].forEach(src => { const i = new Image(); i.src = src; });
+['img/maze2', 'img/maze3', 'img/maze4', 'img/board', 'img/cardback'].forEach(src => { const i = new Image(); i.src = src; });
 
 // ---------- 화면 높이: 주소창·네비게이션 바를 뺀 "실제로 보이는" 높이로 맞춤 ----------
 function fitHeight() { document.documentElement.style.setProperty('--vh', (window.innerHeight / 100) + 'px'); }
@@ -58,7 +58,7 @@ function cardHTML(id, { cls = '', attrs = '' } = {}) {
   const t = c.drought ? 'drought' : c.joker ? 'joker' : c.type;
   // 카드 전체 그림(public/img/custom/cards/<id>.jpg)을 그대로 사용
   return `<div class="card ${c.type} ${t} ${cls}" ${attrs} title="${esc(c.name)} (MP ${c.cost}) - ${esc(c.desc)}">
-    <div class="full" style="background-image:url('/img/card/${id}')"></div>${c.drought ? '<div class="dtag">가뭄</div>' : ''}</div>`;
+    <div class="full" style="background-image:url('img/card/${id}')"></div>${c.drought ? '<div class="dtag">가뭄</div>' : ''}</div>`;
 }
 const backHTML = (cls = '', attrs = '') => `<div class="cback ${cls}" ${attrs}></div>`;
 function toast(msg, ms = 2200) { const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.add('hidden'), ms); }

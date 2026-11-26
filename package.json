@@ -1,7 +1,7 @@
 {
-  "name": "math-card-battle",
+  "name": "class-game-hub",
   "version": "1.0.0",
-  "description": "던전 카드 모험 — 6학년 수학 단원별 로그라이크 카드 대전 (여러 선생님 공용)",
+  "description": "수업 게임 모음 — 던전 카드 모험(6학년 수학 카드 대전) + 초성 퀴즈(개인전·모둠 대항전), 서버 하나에 여러 선생님 공용",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
