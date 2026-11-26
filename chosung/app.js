@@ -634,7 +634,7 @@ io.on('connection', (socket) => {
     const pw = String((data && data.pw) || '');
     const spw = String((data && data.spw) || '').trim();
     if (!NAME_RE.test(name)) return cb({ ok: false, msg: '반 이름은 띄어쓰기 없이 한글·영문·숫자 2~12자로 써 주세요. (예: 천곡64)' });
-    if (pw.length < 4 || pw.length > 20) return cb({ ok: false, msg: '교사 비밀번호는 4~20자로 정해 주세요.' });
+    if (pw.length < 4 || pw.length > 20) return cb({ ok: false, msg: '학급 관리 비밀번호(교사용)는 4~20자로 정해 주세요.' });
     if (!SPW_RE.test(spw)) return cb({ ok: false, msg: '학급 비밀번호는 띄어쓰기 없이 2~20자로 정해 주세요. (예: 숫자 4자리)' });
     if (classes.has(keyOf(name))) return cb({ ok: false, msg: '이미 열려 있는 반 이름이에요. 우리 반이면 「우리 반 들어가기」로 들어가고, 아니면 다른 이름을 써 주세요.' });
     if (classes.size >= CONFIG.MAX_CLASSES) return cb({ ok: false, msg: '지금 열린 반이 너무 많아요. 잠시 뒤에 다시 해 주세요.' });
@@ -648,7 +648,7 @@ io.on('connection', (socket) => {
     if (gErr) return cb({ ok: false, gate: true, msg: gErr });
     const k = classes.get(keyOf(data && data.name));
     if (!k) return cb({ ok: false, msg: '그런 반이 없어요. 서버가 다시 켜지면 반이 사라질 수 있어요. 「새 반 만들기」로 다시 만들어 주세요.' });
-    if (!samePw(String((data && data.pw) || ''), k)) { failed(); return cb({ ok: false, msg: '비밀번호가 맞지 않아요.' }); }
+    if (!samePw(String((data && data.pw) || ''), k)) { failed(); return cb({ ok: false, msg: '학급 관리 비밀번호가 맞지 않아요.' }); }
     cb({ ok: true, name: k.name, token: addToken(k) });
   });
 

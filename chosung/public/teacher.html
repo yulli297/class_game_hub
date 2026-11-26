@@ -168,11 +168,11 @@ td.live{color:#9fd1a8;font-weight:700}td.dead{color:#f09595}
         <h2>새 반 만들기</h2>
         <p class="hint">반 이름은 띄어쓰기 없이 한글·영문·숫자 2~12자예요 (예: 천곡64). 학생들은 반 목록에서 이 이름을 찾아 들어와요.<br>
           <b>학급 비밀번호</b>는 학생들이 들어올 때 입력해요 (예: 숫자 4자리).<br>
-          <b>교사 비밀번호</b>는 선생님만 알고 있으면 돼요. 다른 기기에서 이 반을 관리할 때 써요.</p>
+          <b>학급 관리 비밀번호(교사용)</b>는 선생님만 알고 있으면 돼요. 다른 기기에서 이 반을 관리할 때 써요.</p>
         <div class="field"><label>반 이름</label><input id="cName" maxlength="12" placeholder="예: 천곡64"></div>
         <div class="field"><label>학급 비밀번호 (학생용, 2~20자)</label><input id="cSpw" maxlength="20" placeholder="예: 6464"></div>
-        <div class="field"><label>교사 비밀번호 (4~20자)</label><input id="cPw" type="password" maxlength="20"></div>
-        <div class="field"><label>교사 비밀번호 한 번 더</label><input id="cPw2" type="password" maxlength="20"></div>
+        <div class="field"><label>학급 관리 비밀번호 (교사용)</label><input id="cPw" type="password" maxlength="20" placeholder="4~20자"></div>
+        <div class="field"><label>학급 관리 비밀번호 한 번 더</label><input id="cPw2" type="password" maxlength="20"></div>
         <button class="primary" type="submit">반 만들기</button>
         <div class="msg" id="createMsg"></div>
       </form>
@@ -181,7 +181,7 @@ td.live{color:#9fd1a8;font-weight:700}td.dead{color:#f09595}
         <p class="hint">이미 만든 반을 다른 기기(교실 컴퓨터, 태블릿)에서 관리할 때 써요.<br>서버가 오래 쉬었다가 다시 켜지면 반이 사라질 수 있어요. 그때는 「새 반 만들기」로 다시 만들어 주세요.</p>
         <div class="field"><label>열려 있는 반 (눌러서 고르기)</label><div id="openClasses" style="display:flex;flex-wrap:wrap;gap:8px"></div></div>
         <div class="field"><label>반 이름</label><input id="lName" maxlength="12"></div>
-        <div class="field"><label>교사 비밀번호</label><input id="lPw" type="password" maxlength="20"></div>
+        <div class="field"><label>학급 관리 비밀번호 (교사용)</label><input id="lPw" type="password" maxlength="20"></div>
         <button class="primary" type="submit">들어가기</button>
         <div class="msg" id="loginMsg"></div>
       </form>
@@ -318,7 +318,7 @@ function enter(a) {
 $('createForm').addEventListener('submit', e => {
   e.preventDefault();
   const name = $('cName').value.replace(/\s/g, ''), pw = $('cPw').value, spw = $('cSpw').value.trim();
-  if (pw !== $('cPw2').value) { $('createMsg').textContent = '교사 비밀번호 두 개가 서로 달라요.'; return; }
+  if (pw !== $('cPw2').value) { $('createMsg').textContent = '학급 관리 비밀번호 두 칸이 서로 달라요.'; return; }
   $('createMsg').textContent = '';
   socket.emit('createClass', { gate, name, pw, spw }, res => {
     if (gateFailed(res)) return;
