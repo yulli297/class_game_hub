@@ -3,95 +3,293 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>교사 관리 화면</title>
+<title>던전 카드 모험 · 교사 화면</title>
 <style>
   :root{--bg:#f5f4f9;--card:#fff;--ink:#222;--muted:#666;--line:#ddd;--accent:#5a3fe0;--ok:#1f8a4c;--bad:#c0392b}
   *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font-family:"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif}
   .wrap{max-width:1200px;margin:0 auto;padding:16px}
-  h1{font-size:22px;margin:4px 0 14px}
+  h1{font-size:22px;margin:4px 0 14px} h2{font-size:17px;margin:0 0 10px}
   .box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
-  input{font-size:15px;padding:7px 10px;border:1px solid var(--line);border-radius:8px}
-  button{font-size:14px;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer}
+  input,select{font-size:15px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-family:inherit}
+  button{font-size:14px;padding:7px 12px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-family:inherit}
   button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
   button.danger{color:var(--bad);border-color:#e7b3ad}
-  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-  .tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button.small{font-size:13px;padding:4px 9px}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .hide{display:none!important}
   table{width:100%;border-collapse:collapse;font-size:14px}
   th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
   th{background:#faf9fd;font-weight:600}
   .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#bbb;margin-right:4px}.dot.on{background:var(--ok)}
   .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .muted{color:var(--muted);font-size:13px}
+  .msg{color:var(--bad);font-size:14px;min-height:18px;margin-top:6px}
   .pill{display:inline-block;padding:1px 8px;border-radius:999px;background:#eee;font-size:12px}
-  .modebar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin-bottom:10px;border-radius:10px;background:#f3f0ff;border:1px solid #ddd5ff}
   .seg{display:inline-flex;border:1px solid var(--accent);border-radius:8px;overflow:hidden}
   .seg button{border:0;border-radius:0;padding:7px 14px;background:#fff;color:var(--accent)}
   .seg button.on{background:var(--accent);color:#fff}
   .grid2{display:grid;grid-template-columns:2fr 1fr;gap:14px} @media(max-width:900px){.grid2{grid-template-columns:1fr}}
+  .auth2{display:grid;grid-template-columns:1.3fr 1fr;gap:14px} @media(max-width:900px){.auth2{grid-template-columns:1fr}}
+  .openbtn{padding:8px 16px;font-size:17px}.openbtn.sel{box-shadow:0 0 0 3px #c9bcff}
+  .field{margin-bottom:10px}.field>label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+  .field input{width:100%}
+  /* 단원 고르기 */
+  .units{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}
+  .units .sem{font-weight:700;font-size:14px;margin:2px 0 2px;color:var(--accent)}
+  .unit{display:flex;align-items:center;gap:6px;font-size:14px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:#fff}
+  .unit input{width:auto;margin:0}
+  .unit.on{border-color:var(--accent);background:#f3f0ff}
+  .unit.off{color:#aaa;background:#fafafa;cursor:not-allowed}
+  .unit .soon{margin-left:auto;font-size:11px;color:#aaa}
+  /* 반 머리줄 */
+  .head{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#2b2140;color:#fff;border-radius:12px;padding:10px 14px;margin-bottom:14px}
+  .head .nm{font-size:20px;font-weight:700} .head .sp{flex:1}
+  .head button{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3)}
+  .head button.danger{color:#ffb3a8}
+  /* 입장 안내 */
+  .enter{display:flex;gap:14px;align-items:center}
+  .qr{width:120px;height:120px;border:1px solid var(--line);border-radius:8px;padding:4px;cursor:pointer;flex:none;background:#fff}
+  .qr img{width:100%;height:100%}
+  .enter b.big{font-size:22px;color:var(--accent)}
+  #qrBig{position:fixed;inset:0;z-index:20;background:#fff;display:none;align-items:center;justify-content:center;gap:5vw;cursor:pointer}
+  #qrBig.on{display:flex}
+  #qrBig img{width:min(70vh,45vw);height:min(70vh,45vw)}
+  #qrBig .qinfo{font-size:clamp(22px,3.2vw,44px);line-height:1.6} #qrBig b{color:var(--accent)}
+  #netBar{position:fixed;left:0;right:0;top:0;background:var(--bad);color:#fff;text-align:center;padding:6px;z-index:30;display:none}#netBar.on{display:block}
+  #idle{display:none;position:fixed;inset:0;z-index:25;background:rgba(20,16,30,.92);color:#fff;align-items:center;justify-content:center;text-align:center;font-size:22px;line-height:1.7}#idle.on{display:flex}
 </style>
 </head>
 <body>
+<div id="netBar">서버 연결이 끊겼어요. 다시 연결하는 중…</div>
+<div id="idle">오래 쓰지 않아서 서버 연결을 쉬고 있어요.<br>화면을 누르면 다시 연결돼요.</div>
+<div id="qrBig" title="누르면 닫혀요"><img id="qrBigImg" alt="반 입장 QR 코드"><div class="qinfo">QR 코드를 찍거나<br><span id="qrUrl"></span> 에서<br>반 <b id="qrName"></b> 을 찾고<br>학급 비밀번호 <b id="qrPw"></b> 입력</div></div>
 <div class="wrap">
-  <h1>수학 카드 모험 · 교사 관리 화면</h1>
-  <div class="box" id="login">
-    <div class="row"><input id="pw" type="password" placeholder="관리 비밀번호"><button class="primary" id="lg">로그인</button></div>
-  </div>
-  <div id="main" style="display:none">
-    <div class="box">
-      <div class="row"><b>반 만들기</b><input id="code" placeholder="반 코드 (예: 6-1)" style="width:140px"><input id="size" type="number" min="1" max="40" value="24" style="width:80px"> 명
-        <select id="mode" style="font-size:15px;padding:6px 8px;border:1px solid var(--line);border-radius:8px"><option value="quiz">문제 모드</option><option value="game">게임 모드 (문제 없음)</option></select>
-        <button class="primary" id="mk">만들기</button><span class="muted">학생은 반 코드를 고른 뒤 자기 번호를 눌러 들어와요.</span></div>
+  <h1>던전 카드 모험 · 교사 화면</h1>
+
+  <!-- 1. 교사 접속 비밀번호 -->
+  <section id="gate" class="hide">
+    <form class="box" id="gateForm" autocomplete="off" style="max-width:420px">
+      <h2>교사 접속 비밀번호</h2>
+      <p class="muted">선생님들끼리 공유하는 비밀번호예요. 이 기기에 기억돼요.</p>
+      <div class="row"><input id="gPw" type="password" maxlength="40" placeholder="교사 접속 비밀번호" style="flex:1"><button class="primary">들어가기</button></div>
+      <div class="msg" id="gateMsg"></div>
+    </form>
+  </section>
+
+  <!-- 2. 반 만들기 / 우리 반 들어가기 -->
+  <section id="auth" class="hide">
+    <div class="auth2">
+      <form class="box" id="createForm" autocomplete="off">
+        <h2>새 반 만들기</h2>
+        <div class="row" style="align-items:flex-start">
+          <div class="field" style="flex:1"><label>반 이름 (띄어쓰기 없이 2~12자)</label><input id="cName" maxlength="12" placeholder="예: 천곡64"></div>
+          <div class="field" style="width:110px"><label>학생 수</label><input id="cSize" type="number" min="1" max="30" value="24"></div>
+        </div>
+        <div class="row" style="align-items:flex-start">
+          <div class="field" style="flex:1"><label>학급 비밀번호 (학생용)</label><input id="cSpw" maxlength="20" placeholder="예: 6464"></div>
+          <div class="field" style="flex:1"><label>학급 관리 비밀번호 (교사용)</label><input id="cPw" type="password" maxlength="20" placeholder="4~20자"></div>
+          <div class="field" style="flex:1"><label>학급 관리 비밀번호 한 번 더</label><input id="cPw2" type="password" maxlength="20"></div>
+        </div>
+        <div class="field"><label>문제로 낼 단원 (여러 개 고르면 섞여서 나와요)</label><div class="units" id="cUnits"></div></div>
+        <div class="field"><label>진행 방식</label>
+          <span class="seg" id="cMode"><button type="button" data-m="quiz" class="on">문제 모드</button><button type="button" data-m="game">게임 모드 (문제 없음)</button></span></div>
+        <button class="primary">반 만들기</button>
+        <div class="msg" id="createMsg"></div>
+      </form>
+      <div>
+        <form class="box" id="loginForm" autocomplete="off">
+          <h2>우리 반 들어가기</h2>
+          <p class="muted">이미 만든 반을 다른 기기(교실 컴퓨터, 태블릿)에서 관리할 때 써요.<br>서버가 오래 쉬었다가 다시 켜지면 반이 사라질 수 있어요. 그때는 「새 반 만들기」로 다시 만들어 주세요.</p>
+          <div class="field"><label>열려 있는 반 (눌러서 고르기)</label><div id="openClasses" class="row"></div></div>
+          <div class="field"><label>반 이름</label><input id="lName" maxlength="12"></div>
+          <div class="field"><label>학급 관리 비밀번호 (교사용)</label><input id="lPw" type="password" maxlength="20"></div>
+          <button class="primary">들어가기</button>
+          <div class="msg" id="loginMsg"></div>
+        </form>
+        <div class="box hide" id="adminBox">
+          <h2>관리자</h2>
+          <form class="row" id="adminForm" autocomplete="off"><input id="aPw" type="password" placeholder="관리자 비밀번호"><button>열린 반 보기</button></form>
+          <div class="msg" id="adminMsg"></div>
+          <table id="adminTable"></table>
+        </div>
+      </div>
     </div>
-    <div class="tabs" id="tabs"></div>
-    <div id="cls"></div>
-  </div>
+  </section>
+
+  <!-- 3. 반 관리 -->
+  <section id="main" class="hide">
+    <div class="head"><span class="nm" id="hName"></span><span id="hInfo"></span><span class="sp"></span>
+      <button id="logoutBtn" title="이 기기에서만 반에서 나가요. 반은 그대로 열려 있어요.">반 나가기</button>
+      <button class="danger" id="closeBtn" title="반을 없애요. 학생들도 모두 나가게 돼요.">반 닫기</button></div>
+    <div class="grid2">
+      <div class="box"><h2>문제 단원</h2>
+        <div class="units" id="mUnits"></div>
+        <div class="row" style="margin-top:10px"><button class="primary" id="unitSave" disabled>단원 바꾸기</button>
+          <span class="muted">바꾸면 풀고 있던 문제도 새 단원 문제로 바뀌어요. (모은 카드와 기록은 그대로)</span></div>
+        <div class="msg" id="unitMsg"></div>
+        <div class="row" style="margin-top:6px"><b>진행 방식</b>
+          <span class="seg" id="mMode"><button data-m="quiz">문제 모드</button><button data-m="game">게임 모드</button></span>
+          <span class="muted" id="modeHint"></span></div>
+      </div>
+      <div class="box"><h2>학생 입장 안내</h2><div class="enter" id="enter"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="box">
+        <div class="row" style="justify-content:space-between;margin-bottom:8px">
+          <b>진행 현황</b><span>대결 대기 <b id="qWait">0</b> / 접속 <b id="qOn">0</b>명</span>
+          <span class="row"><button class="primary" id="fm">지금 대기 중인 학생끼리 매칭</button><button class="danger" id="rc">반 전체 초기화</button></span></div>
+        <p class="muted">접속한 학생이 모두 '대결 대기'가 되면 자동으로 무작위 매칭돼요. 결석이나 늦는 학생 때문에 기다려야 하면 위 매칭 버튼을 누르세요. 인원이 홀수면 한 명은 연습 로봇과 대결해요.</p>
+        <table><thead><tr><th>번호</th><th>접속</th><th>단계</th><th>카드</th><th>판</th><th>전적</th><th>대결 상황</th><th></th></tr></thead><tbody id="stuRows"></tbody></table>
+      </div>
+      <div class="box"><b>대결 결과 기록</b>
+        <table style="margin-top:8px"><thead><tr><th>시각</th><th>대결</th><th>승자</th><th>턴</th><th>HP</th></tr></thead><tbody id="matchRows"></tbody></table></div>
+    </div>
+  </section>
 </div>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-const socket = io(); const $ = s => document.querySelector(s);
-let st = null, cur = null, authed = false;
-const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function login(pw){ socket.emit('tLogin', { pw }, r => { if (r.ok) { authed = true; try{sessionStorage.setItem('tpw', pw)}catch(e){} $('#login').style.display='none'; $('#main').style.display='block'; } else alert('비밀번호가 달라요.'); }); }
-$('#lg').onclick = () => login($('#pw').value);
-$('#pw').onkeydown = e => { if (e.key === 'Enter') login($('#pw').value); };
-socket.on('connect', () => { let pw=null; try{pw=sessionStorage.getItem('tpw')}catch(e){} if (pw) login(pw); });
-$('#mk').onclick = () => socket.emit('tCreate', { code: $('#code').value, size: $('#size').value, mode: $('#mode').value }, r => { if (!r.ok) alert(r.msg); else { cur = $('#code').value.trim(); $('#code').value=''; } });
-socket.on('tState', s => { st = s; draw(); });
-function act(ev, data, confirmMsg){ if (confirmMsg && !confirm(confirmMsg)) return; socket.emit(ev, data, r => { if (r && r.ok === false && r.msg) alert(r.msg); }); }
-function draw(){
-  if (!st) return;
-  if (!cur || !st.classes.find(c => c.code === cur)) cur = st.classes[0] && st.classes[0].code;
-  $('#tabs').innerHTML = st.classes.map(c => `<button class="${c.code===cur?'on':''}" data-c="${esc(c.code)}">${esc(c.code)}${c.mode==='game'?' · 게임':''} (${c.students.filter(s=>s.online).length}/${c.size})</button>`).join('') || '<span class="muted">아직 만든 반이 없어요.</span>';
-  document.querySelectorAll('[data-c]').forEach(b => b.onclick = () => { cur = b.dataset.c; draw(); });
-  const c = st.classes.find(x => x.code === cur); if (!c) { $('#cls').innerHTML=''; return; }
-  $('#cls').innerHTML = `<div class="grid2"><div class="box">
-    <div class="row" style="justify-content:space-between;margin-bottom:8px">
-      <b>${esc(c.code)} 진행 현황</b>
-      <span>대결 대기 <b>${c.queue.waiting}</b> / 접속 <b>${c.queue.online}</b>명</span>
-      <span class="row"><button class="primary" id="fm">지금 대기 중인 학생끼리 매칭</button>
-      <button class="danger" id="rc">반 전체 초기화</button><button class="danger" id="dc">반 삭제</button></span></div>
-    <div class="modebar"><b>모드</b>
-      <span class="seg"><button data-m="quiz" class="${c.mode!=='game'?'on':''}">문제 모드</button><button data-m="game" class="${c.mode==='game'?'on':''}">게임 모드</button></span>
-      <span class="muted">${c.mode==='game' ? '문제 없이 카드 3장 중 1장을 고르는 것만으로 덱을 만들어 대결해요.' : '문제를 맞힐 때마다 카드 3장 중 1장을 골라 덱을 만들어요.'}</span></div>
-    <p class="muted">접속한 학생이 모두 '대결 대기'가 되면 자동으로 무작위 매칭돼요. 결석이나 늦는 학생 때문에 기다려야 하면 위 매칭 버튼을 누르세요. 인원이 홀수면 한 명은 연습 로봇과 대결해요.</p>
-    <table><thead><tr><th>번호</th><th>접속</th><th>단계</th><th>카드</th><th>판</th><th>전적</th><th>대결 상황</th><th></th></tr></thead><tbody>
-    ${c.students.map(s => `<tr><td>${s.num}</td><td><span class="dot ${s.online?'on':''}"></span></td><td>${esc(s.stage)}${s.drought?' <span class="pill">가뭄 덱</span>':''}${s.wrong>=3?` <span class="pill">연속 오답 ${s.wrong}</span>`:''}</td>
-      <td>${s.cards}/18</td><td>${s.round}</td><td>${s.wins}승 ${s.losses}패 ${s.draws}무</td><td>${esc(s.battle||'')}</td>
-      <td><button class="danger" data-r="${s.num}">초기화</button></td></tr>`).join('')}
-    </tbody></table></div>
-    <div class="box"><b>대결 결과 기록</b>
-    <table style="margin-top:8px"><thead><tr><th>시각</th><th>대결</th><th>승자</th><th>턴</th><th>HP</th></tr></thead><tbody>
-    ${c.matches.map(m => `<tr><td>${new Date(m.time).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}</td><td>${esc(m.a)} vs ${esc(m.b)}</td><td>${esc(m.winner)}</td><td>${m.turns}</td><td>${esc(m.hp)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">아직 기록이 없어요.</td></tr>'}
-    </tbody></table></div></div>`;
-  $('#fm').onclick = () => act('tForceMatch', { code: c.code });
-  document.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { if ((c.mode || 'quiz') === b.dataset.m) return;
-    act('tSetMode', { code: c.code, mode: b.dataset.m }, b.dataset.m === 'game'
-      ? `${c.code} 반을 게임 모드로 바꿀까요?\n문제를 풀던 학생은 바로 카드 고르기로 넘어가요. (모은 카드와 기록은 그대로)`
-      : `${c.code} 반을 문제 모드로 바꿀까요?\n다음 카드부터는 문제를 맞혀야 얻을 수 있어요. (모은 카드와 기록은 그대로)`); });
-  $('#rc').onclick = () => act('tResetClass', { code: c.code }, `${c.code} 학생 모두의 덱과 기록을 초기화할까요?`);
-  $('#dc').onclick = () => act('tDelete', { code: c.code }, `${c.code} 반을 삭제할까요? 학생들이 모두 나가게 돼요.`);
-  document.querySelectorAll('[data-r]').forEach(b => b.onclick = () => act('tResetStudent', { code: c.code, num: Number(b.dataset.r) }, `${b.dataset.r}번 학생을 처음부터 다시 시작하게 할까요?`));
+const socket = io(); const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ls = { get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }, del(k) { try { localStorage.removeItem(k); } catch (e) {} } };
+let UNITS = [], st = null, auth = ls.get('cardTeacher'), gate = ls.get('cardGate') || '', inClass = false;
+let pickUnits = new Set(), createMode = 'quiz', editUnits = null;
+function showOnly(id) { ['gate', 'auth', 'main'].forEach(x => $(x).classList.toggle('hide', x !== id)); }
+function act(ev, data, confirmMsg, done) { if (confirmMsg && !confirm(confirmMsg)) return; socket.emit(ev, data, r => { if (r && r.ok === false && r.msg) alert(r.msg); else if (done) done(r); }); }
+
+// ---------- 단원 고르기 칸 ----------
+function unitsHTML(sel, prefix) {
+  return [1, 2].map(sem => `<div><div class="sem">${sem}학기</div>${UNITS.filter(u => u.sem === sem).map(u =>
+    `<label class="unit ${u.ready ? (sel.has(u.id) ? 'on' : '') : 'off'}"><input type="checkbox" data-${prefix}="${u.id}" ${sel.has(u.id) ? 'checked' : ''} ${u.ready ? '' : 'disabled'}>${u.no}. ${esc(u.name)}${u.ready ? '' : '<span class="soon">준비 중</span>'}</label>`).join('')}</div>`).join('');
 }
+function drawCreateUnits() {
+  $('cUnits').innerHTML = unitsHTML(pickUnits, 'cu');
+  document.querySelectorAll('[data-cu]').forEach(b => b.onchange = () => { b.checked ? pickUnits.add(b.dataset.cu) : pickUnits.delete(b.dataset.cu); drawCreateUnits(); });
+}
+document.querySelectorAll('#cMode [data-m]').forEach(b => b.onclick = () => { createMode = b.dataset.m; document.querySelectorAll('#cMode [data-m]').forEach(x => x.classList.toggle('on', x === b)); });
+
+// ---------- 1. 교사 접속 비밀번호 ----------
+function tryGate(pw, silent) {
+  socket.emit('teacherGate', { gate: pw }, r => {
+    if (!r.ok) { ls.del('cardGate'); gate = ''; showOnly('gate'); if (!silent) $('gateMsg').textContent = r.msg; return; }
+    gate = pw; ls.set('cardGate', pw); UNITS = r.units; $('adminBox').classList.toggle('hide', !r.adminEnabled);
+    if (auth) enter(auth); else showAuth();
+  });
+}
+$('gateForm').onsubmit = e => { e.preventDefault(); $('gateMsg').textContent = ''; tryGate($('gPw').value.trim()); };
+const gateFailed = r => { if (r.gate) { ls.del('cardGate'); gate = ''; showOnly('gate'); $('gateMsg').textContent = r.msg; return true; } return false; };
+
+// ---------- 2. 반 만들기 / 들어가기 ----------
+let openList = [];
+function showAuth(msg) {
+  inClass = false; showOnly('auth'); drawCreateUnits();
+  $('loginMsg').textContent = msg || '';
+  socket.emit('browse', l => { openList = l || []; renderOpen(); });
+}
+socket.on('classList', l => { openList = l || []; renderOpen(); });
+function renderOpen() {
+  $('openClasses').innerHTML = openList.length ? openList.map(n => `<button type="button" class="primary openbtn ${$('lName').value === n ? 'sel' : ''}" data-open="${esc(n)}">${esc(n)}</button>`).join('') : '<span class="muted">열려 있는 반이 없어요.</span>';
+  document.querySelectorAll('[data-open]').forEach(b => b.onclick = () => { $('lName').value = b.dataset.open; renderOpen(); $('lPw').focus(); });
+}
+$('createForm').onsubmit = e => {
+  e.preventDefault(); $('createMsg').textContent = '';
+  if ($('cPw').value !== $('cPw2').value) { $('createMsg').textContent = '학급 관리 비밀번호 두 칸이 서로 달라요.'; return; }
+  socket.emit('createClass', { gate, name: $('cName').value, size: $('cSize').value, spw: $('cSpw').value, pw: $('cPw').value, mode: createMode, units: [...pickUnits] }, r => {
+    if (gateFailed(r)) return;
+    if (!r.ok) { $('createMsg').textContent = r.msg; return; }
+    enter({ name: r.name, token: r.token });
+  });
+};
+$('loginForm').onsubmit = e => {
+  e.preventDefault(); $('loginMsg').textContent = '';
+  socket.emit('teacherLogin', { gate, name: $('lName').value, pw: $('lPw').value }, r => {
+    if (gateFailed(r)) return;
+    if (!r.ok) { $('loginMsg').textContent = r.msg; return; }
+    enter({ name: r.name, token: r.token });
+  });
+};
+function enter(a) {
+  socket.emit('teacherJoin', a, r => {
+    if (!r.ok) { auth = null; ls.del('cardTeacher'); return showAuth(r.msg); }
+    auth = a; ls.set('cardTeacher', a); inClass = true; UNITS = r.units || UNITS; editUnits = null; showOnly('main');
+  });
+}
+// 관리자
+let adminPw = '';
+function adminLoad() {
+  socket.emit('adminList', { pw: adminPw }, r => {
+    $('adminMsg').textContent = r.ok ? '' : r.msg;
+    if (!r.ok) { $('adminTable').innerHTML = ''; return; }
+    $('adminTable').innerHTML = `<tr><th>반</th><th>인원</th><th>방식</th><th>단원</th><th>접속</th><th>교사</th><th>연 지</th><th>마지막 사용</th><th></th></tr>` +
+      (r.list.map(c => `<tr><td>${esc(c.name)}</td><td>${c.size}</td><td>${c.mode}</td><td>${esc(c.units)}</td><td>${c.online}</td><td>${c.teachers}</td><td>${c.ageMin}분</td><td>${c.idleMin}분 전</td><td><button class="small danger" data-aclose="${esc(c.name)}">닫기</button></td></tr>`).join('') || '<tr><td colspan="9" class="muted">열린 반이 없어요.</td></tr>') +
+      `<tr><td colspan="9" class="muted">열린 반 ${r.list.length} / 최대 ${r.max}개</td></tr>`;
+    document.querySelectorAll('[data-aclose]').forEach(b => b.onclick = () => act('adminClose', { pw: adminPw, name: b.dataset.aclose }, `${b.dataset.aclose} 반을 닫을까요?`, adminLoad));
+  });
+}
+$('adminForm').onsubmit = e => { e.preventDefault(); adminPw = $('aPw').value; adminLoad(); };
+
+// ---------- 3. 반 관리 ----------
+socket.on('tState', s => { st = s; draw(); });
+socket.on('classClosed', msg => { auth = null; ls.del('cardTeacher'); showAuth(msg); });
+$('logoutBtn').onclick = () => { socket.emit('teacherLogout', { token: auth && auth.token }); auth = null; ls.del('cardTeacher'); showAuth(); };
+$('closeBtn').onclick = () => act('tClose', {}, `${st.code} 반을 닫을까요? 학생들이 모두 나가게 되고, 모은 카드와 기록이 사라져요.`);
+$('fm').onclick = () => act('tForceMatch', {});
+$('rc').onclick = () => act('tResetClass', {}, `${st.code} 학생 모두의 덱과 기록을 초기화할까요?`);
+$('unitSave').onclick = () => act('tSetUnits', { units: [...editUnits] }, null, () => { editUnits = null; $('unitMsg').textContent = ''; draw(); });
+document.querySelectorAll('#mMode [data-m]').forEach(b => b.onclick = () => { if (st.mode === b.dataset.m) return;
+  act('tSetMode', { mode: b.dataset.m }, b.dataset.m === 'game'
+    ? `${st.code} 반을 게임 모드로 바꿀까요?\n문제를 풀던 학생은 바로 카드 고르기로 넘어가요. (모은 카드와 기록은 그대로)`
+    : `${st.code} 반을 문제 모드로 바꿀까요?\n다음 카드부터는 문제를 맞혀야 얻을 수 있어요. (모은 카드와 기록은 그대로)`); });
+
+function draw() {
+  if (!st || !inClass) return;
+  $('hName').textContent = st.code;
+  $('hInfo').textContent = `학생 ${st.size}명 · ${st.mode === 'game' ? '게임 모드' : '문제 모드'}`;
+  // 단원 (고치는 중이면 고친 값 유지)
+  const sel = editUnits || new Set(st.units);
+  $('mUnits').innerHTML = unitsHTML(sel, 'mu');
+  document.querySelectorAll('[data-mu]').forEach(b => b.onchange = () => {
+    editUnits = new Set(editUnits || st.units); b.checked ? editUnits.add(b.dataset.mu) : editUnits.delete(b.dataset.mu);
+    if ([...editUnits].sort().join() === [...st.units].sort().join()) editUnits = null;
+    $('unitMsg').textContent = editUnits && !editUnits.size ? '단원을 하나 이상 골라 주세요.' : ''; draw();
+  });
+  $('unitSave').disabled = !editUnits || !editUnits.size;
+  document.querySelectorAll('#mMode [data-m]').forEach(b => b.classList.toggle('on', b.dataset.m === st.mode));
+  $('modeHint').textContent = st.mode === 'game' ? '문제 없이 카드만 골라 덱을 만들어요.' : '문제를 맞힐 때마다 카드 3장 중 1장을 골라요.';
+  // 입장 안내
+  const url = location.origin, qr = `/qr?c=${encodeURIComponent(st.code)}`;
+  if ($('enter').dataset.k !== st.code + '|' + st.spw) {
+    $('enter').dataset.k = st.code + '|' + st.spw;
+    $('enter').innerHTML = `<div class="qr" id="qrSmall" title="크게 보기"><img src="${qr}" alt="반 입장 QR 코드"></div>
+      <div>학생 주소 <b>${esc(url)}</b><br>반 이름 <b class="big">${esc(st.code)}</b><br>학급 비밀번호 <b class="big">${esc(st.spw)}</b> <button class="small" id="spwBtn">바꾸기</button><br>
+      <button class="small primary" id="qrBtn" style="margin-top:6px">QR 크게 보기 (칠판 화면용)</button></div>`;
+    const big = () => { $('qrBigImg').src = qr; $('qrUrl').textContent = url; $('qrName').textContent = st.code; $('qrPw').textContent = st.spw; $('qrBig').classList.add('on'); };
+    $('qrSmall').onclick = big; $('qrBtn').onclick = big;
+    $('spwBtn').onclick = () => { const v = prompt('새 학급 비밀번호 (띄어쓰기 없이 2~20자)\n이미 들어온 학생은 그대로이고, 새로 들어오는 학생부터 적용돼요.', st.spw); if (v != null) act('tSetSpw', { spw: v }); };
+  }
+  $('qWait').textContent = st.queue.waiting; $('qOn').textContent = st.queue.online;
+  $('stuRows').innerHTML = st.students.map(s => `<tr><td>${s.num}</td><td><span class="dot ${s.online ? 'on' : ''}"></span></td><td>${esc(s.stage)}${s.drought ? ' <span class="pill">가뭄 덱</span>' : ''}${s.wrong >= 3 ? ` <span class="pill">연속 오답 ${s.wrong}</span>` : ''}</td>
+    <td>${s.cards}/${st.deckSize}</td><td>${s.round}</td><td>${s.wins}승 ${s.losses}패 ${s.draws}무</td><td>${esc(s.battle || '')}</td>
+    <td><button class="small danger" data-r="${s.num}">초기화</button></td></tr>`).join('');
+  document.querySelectorAll('[data-r]').forEach(b => b.onclick = () => act('tResetStudent', { num: Number(b.dataset.r) }, `${b.dataset.r}번 학생을 처음부터 다시 시작하게 할까요?`));
+  $('matchRows').innerHTML = st.matches.map(m => `<tr><td>${new Date(m.time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</td><td>${esc(m.a)} vs ${esc(m.b)}</td><td>${esc(m.winner)}</td><td>${m.turns}</td><td>${esc(m.hp)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">아직 기록이 없어요.</td></tr>';
+}
+$('qrBig').onclick = () => $('qrBig').classList.remove('on');
+
+// ---------- 연결 ----------
+socket.on('connect', () => { $('netBar').classList.remove('on'); if (gate) tryGate(gate, true); else showOnly('gate'); });
+socket.on('disconnect', () => { if (!idleOff) $('netBar').classList.add('on'); });
+// 30분 동안 아무것도 누르지 않으면 서버 연결을 쉬어요 (무료 서버 시간 아끼기). 누르면 다시 연결
+const IDLE_MS = 30 * 60 * 1000;
+let lastInput = Date.now(), idleOff = false;
+['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => {
+  lastInput = Date.now();
+  if (idleOff) { idleOff = false; $('idle').classList.remove('on'); socket.connect(); }
+}, true));
+setInterval(() => {
+  if (idleOff || Date.now() - lastInput < IDLE_MS) return;
+  if (st && st.students.some(s => s.battle)) return; // 대결 중인 학생이 있으면 계속 연결
+  idleOff = true; $('idle').classList.add('on'); $('netBar').classList.remove('on'); socket.disconnect();
+}, 60000);
 </script>
 </body>
 </html>

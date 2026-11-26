@@ -1,7 +1,7 @@
 {
-  "name": "decimal-card-battle",
+  "name": "math-card-battle",
   "version": "1.0.0",
-  "description": "소수의 나눗셈 로그라이크 카드 대전 (6학년 2학기)",
+  "description": "던전 카드 모험 — 6학년 수학 단원별 로그라이크 카드 대전 (여러 선생님 공용)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "express": "^4.21.2",
+    "qrcode": "^1.5.4",
     "socket.io": "^4.8.1"
   }
 }

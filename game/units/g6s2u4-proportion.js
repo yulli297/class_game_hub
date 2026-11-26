@@ -9,7 +9,7 @@
 //   ⑦ 비례배분
 //  입력칸에는 숫자만 쓸 수 있어서, 비로 답하는 문제는 "3 : □"처럼 빈칸 하나만 채우게 했어요.
 //  정답은 모두 자연수(일부는 소수 첫째 자리)로 딱 떨어지게 만들어요.
-//  (이전 소수의 나눗셈 문제는 archive/problems 폴더에 보관)
+//  (소수의 나눗셈 단원은 g6s2u2-decimal-division.js)
 // =============================================================
 const rnd = n => Math.floor(Math.random() * n);
 const between = (a, b) => a + rnd(b - a + 1);
@@ -199,7 +199,7 @@ const SHARE = [   // 비례배분 상황: [이름 두 개, 물건, 단위, 묶�
   { names: ['형', '동생'], thing: '구슬', u: '개', step: 1 },
   { names: ['지우', '민서'], thing: '사탕', u: '개', step: 1 },
   { names: ['가 모둠', '나 모둠'], thing: '색종이', u: '장', step: 1 },
-  { names: ['언니', '나'], thing: '용돈', u: '원', step: 100 },
+  { names: ['언니', '오빠'], thing: '용돈', u: '원', step: 100 },
   { names: ['1반', '2반'], thing: '공책', u: '권', step: 1 },
 ];
 
@@ -329,8 +329,8 @@ function nextProblem(student) {
 // 학생에게 보낼 때는 정답과 meta를 뺀다
 const publicProblem = p => ({ id: p.id, type: p.type, label: TYPE_LABEL[p.type], text: p.text, figs: p.figs, options: p.options || null, unit: p.unit || '' });
 function check(p, value) {
-  if (p.options) return Number(value) === p.answer;
-  const v = String(value ?? '').trim().replace(/,/g, '').replace(/원|개|장|권|컵|mL|km|cm|m$/g, '').trim();
+  if (p.options) return String(value ?? '').trim() !== '' && Number(value) === p.answer;
+  const v = String(value ?? '').replace(/,/g, '').replace(/\s/g, '').replace(/[^\d.]+$/, '');   // 단위를 같이 써도 인정
   if (!/^\d*\.?\d+$/.test(v)) return false;           // 숫자와 소수점 하나만
   return Math.abs(Number(v) - p.answer) < 1e-9;
 }

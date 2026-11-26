@@ -6,7 +6,7 @@ const $ = s => document.querySelector(s);
 const app = $('#app');
 let CARDS = {}, CONFIG = {}, BASE = [];
 let S = null;                        // 서버에서 받은 내 상태
-let local = { screen: 'classes', code: null };
+let local = { screen: 'classes', pick: null, list: [], pwMsg: '' };
 let selected = null, timerInt = null, shownReady = {};
 let anim = { turn: -1 };             // 대결 애니메이션을 한 번만 보여 주기 위한 표시
 let blog = { key: null, items: [] }; // 대결 기록
@@ -68,60 +68,64 @@ function modal(html, onClose) {
   $('#modalBox').querySelectorAll('[data-close]').forEach(b => b.onclick = close);
 }
 
-// ---------- 게임 방법 팝업 ----------
+// ---------- 게임 안내 (4쪽): 진행 방법 → 공격 카드 → 방어 카드 → 특수 카드 ----------
 const isGame = () => S && S.mode === 'game'; // 게임 모드: 문제 없이 카드만 골라 덱 만들기
-const HOWTO_GAME_QUIZ = `<h2>게임 진행 방법</h2><ol>
+const HOWTO_QUIZ = `<h2>게임 진행 방법</h2><ol>
 <li>이 게임은 카드를 모아 대결하는 카드게임입니다.</li>
 <li>문제를 한 문제 풀 때마다 랜덤하게 등장하는 3장의 카드 중에 한 장을 골라 진행합니다.</li>
-<li>카드의 종류는 공격, 방어, 스킬 카드가 있습니다.</li>
-<li>기본 카드는 공격 2장, 방어 2장, 스킬 2장이 있습니다.</li>
-<li>문제를 열심히 풀어 자신만의 카드 덱을 만들어 친구와 대결하세요.</li></ol>
-<div class="row"><button class="btn huge" data-close>확인</button></div>`;
-const HOWTO_GAME_PLAY = `<h2>게임 진행 방법</h2><ol>
+<li>카드의 종류는 공격, 방어, 특수 카드가 있습니다.</li>
+<li>기본 카드는 공격 2장, 방어 2장, 특수 2장이 있습니다.</li>
+<li>문제를 열심히 풀어 자신만의 카드 덱을 만들어 친구와 대결하세요.</li></ol>`;
+const HOWTO_PLAY = `<h2>게임 진행 방법</h2><ol>
 <li>이 게임은 카드를 모아 대결하는 카드게임입니다.</li>
 <li>랜덤하게 등장하는 3장의 카드 중에 한 장을 고르는 것을 반복해서 덱을 만듭니다. (게임 모드: 문제 없이 진행)</li>
-<li>카드의 종류는 공격, 방어, 스킬 카드가 있습니다.</li>
-<li>기본 카드는 공격 2장, 방어 2장, 스킬 2장이 있습니다.</li>
-<li>전략을 잘 세워 자신만의 카드 덱을 만들어 친구와 대결하세요.</li></ol>
-<div class="row"><button class="btn huge" data-close>확인</button></div>`;
-const howtoGame = () => isGame() ? HOWTO_GAME_PLAY : HOWTO_GAME_QUIZ;
+<li>카드의 종류는 공격, 방어, 특수 카드가 있습니다.</li>
+<li>기본 카드는 공격 2장, 방어 2장, 특수 2장이 있습니다.</li>
+<li>전략을 잘 세워 자신만의 카드 덱을 만들어 친구와 대결하세요.</li></ol>`;
+const KIND_PAGES = [
+  { type: 'attack', title: '공격 카드', sub: '상대에게 피해를 줘요. 상대의 방어력만큼 피해가 줄어들어요.' },
+  { type: 'defense', title: '방어 카드', sub: '상대의 공격을 막아요. 방어력은 낸 턴과 다음 턴까지 유지돼요.' },
+  { type: 'skill', title: '특수 카드', sub: 'MP 회복, HP 회복, 다음 턴 공격 강화처럼 특별한 효과를 내요.' },
+];
+// 카드 소개에 보여 줄 카드 (기본 카드 + 고를 수 있는 카드, 가뭄 카드는 빼고)
+function guideCards(type) {
+  const ids = [...BASE, ...CHOICE].filter((id, i, a) => a.indexOf(id) === i && CARDS[id] && CARDS[id].type === type);
+  return ids.sort((a, b) => (CARDS[b].base - CARDS[a].base) || (CARDS[a].cost - CARDS[b].cost));
+}
+function kindPage(p) {
+  return `<h2>${p.title}</h2><p class="guide-sub">${p.sub}</p>
+  <div class="guide-grid">${guideCards(p.type).map(id => `<div class="gcard" data-zoom="${id}">${cardHTML(id)}
+    ${CARDS[id].base ? '<span class="gtag base">기본 카드</span>' : CARDS[id].unique ? '<span class="gtag uniq">덱에 1장만</span>' : ''}</div>`).join('')}</div>
+  <p class="guide-tip">카드를 누르면 크게 볼 수 있어요.</p>`;
+}
+const guidePages = () => [isGame() ? HOWTO_PLAY : HOWTO_QUIZ, ...KIND_PAGES.map(kindPage)];
+// 여러 쪽 안내창: 이전/다음으로 넘기고, 마지막 쪽에서 확인
+function pagedModal(pages, lastLabel, onDone) {
+  let i = 0;
+  const draw = () => {
+    modal(`<div class="guide">${pages[i]}</div>
+      <div class="pager"><button class="btn dark" id="pgPrev" ${i ? '' : 'style="visibility:hidden"'}>이전</button>
+      <span class="dots">${pages.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}<b>${i + 1} / ${pages.length}</b></span>
+      ${i < pages.length - 1 ? '<button class="btn" id="pgNext">다음</button>' : `<button class="btn" data-close>${lastLabel}</button>`}</div>`, onDone);
+    $('#modalBox').scrollTop = 0;
+    if ($('#pgPrev')) $('#pgPrev').onclick = () => { i--; draw(); };
+    if ($('#pgNext')) $('#pgNext').onclick = () => { i++; draw(); };
+    $('#modalBox').querySelectorAll('[data-zoom]').forEach(el => el.onclick = () => {
+      const z = document.createElement('div'); z.className = 'zoom'; z.innerHTML = cardHTML(el.dataset.zoom, { attrs: 'style="--w:min(36vw,calc(var(--vh)*58))"' });
+      z.onclick = () => z.remove(); $('#modalBox').appendChild(z);
+    });
+  };
+  draw();
+}
+const showGuide = (lastLabel, onDone) => pagedModal(guidePages(), lastLabel, onDone);
 const HOWTO_BATTLE = `<h2>대결 진행 방법</h2><ol>
 <li>매턴마다 내 카드 3장 중 한 장을 선택해서 사용할 수 있습니다.</li>
 <li>나와 상대가 카드를 다 선택해야 게임이 진행됩니다.</li>
 <li>대결이 진행되는 동안 나의 18장의 카드 덱은 계속 해서 다시 사용할 수 있습니다.</li>
-<li>공격 카드는 상대에게 데미지를 주고 방어 카드는 상대의 공격을 막을 수 있습니다. 스킬 카드는 특수한 효과를 발동할 수 있습니다.</li>
+<li>공격 카드는 상대에게 데미지를 주고 방어 카드는 상대의 공격을 막을 수 있습니다. 특수 카드는 특수한 효과를 발동할 수 있습니다.</li>
 <li>카드는 MP를 소모해서 사용할 수 있으며 MP가 없어서 카드를 쓸 수 없는 경우 자신의 턴은 스킵됩니다.</li>
 <li>상대보다 뛰어난 전략을 사용해서 상대의 HP를 먼저 0으로 만드는 쪽이 승리합니다.</li></ol>
 <div class="row"><button class="btn huge" data-close>확인</button></div>`;
-
-// ---------- 업데이트 소식 팝업 (기기마다 한 번) ----------
-// 다음 업데이트 때는 UPDATE_VER 값과 내용만 바꾸면 모든 학생에게 다시 한 번 보입니다.
-const UPDATE_VER = '2026-11-05';
-const updateNotice = () => `<h2>업데이트 소식</h2>
-<div class="update-notes">
-<h3>1. MP가 10으로 늘었어요</h3>
-<ul><li>시작 MP와 최대 MP가 모두 <b>10</b>이에요.</li><li>비싼 카드를 더 자주 쓸 수 있어요.</li></ul>
-<h3>2. 방어 카드가 2턴 동안 지켜 줘요</h3>
-<ul><li>방어 카드의 방어력은 <b>낸 턴과 다음 턴까지</b> 유지돼요.</li>
-<li>유지 중인 방어력은 이름 옆에 <b>유지 방어</b>로 표시돼요.</li>
-<li>"완전히 막으면" 보너스는 카드를 낸 턴에만 받아요.</li></ul>
-<h3>3. 새 카드 3장이 생겼어요</h3>
-<div class="cards-row update-cards">${['shatter', 'manasurge', 'comeback'].map(id => cardHTML(id)).join('')}</div>
-<ul><li><b>방패 깨기</b> (MP 2): 상대 방어력을 모두 없애고 피해 2</li>
-<li><b>마나 폭주</b> (MP 2): MP를 가득 채우고 다음 턴 공격 +2 (덱에 1장만)</li>
-<li><b>역전의 일격</b> (MP 4): 내가 잃은 HP의 70%만큼 피해 (덱에 1장만)</li></ul>
-<h3>4. 문제 화면에 연습장이 생겼어요</h3>
-<ul><li>화면 오른쪽 연습장에 펜으로 직접 계산할 수 있어요.</li>
-<li>지우개, 되돌리기, 모두 지우기 기능이 있어요.</li>
-<li><b>왼손잡이 버튼</b>을 누르면 연습장이 왼쪽으로 옮겨져요. 한 번 정하면 그 기기에서는 계속 기억해요.</li></ul>
-</div>
-<div class="row"><button class="btn huge" data-close>확인</button></div>`;
-function maybeShowUpdate() {
-  if (!S || ['queue', 'battle'].includes(S.stage)) return;          // 대결 중에는 띄우지 않음
-  if (store.get('seenUpdate') === UPDATE_VER) return;
-  if (!$('#modal').classList.contains('hidden')) return;             // 다른 안내창이 떠 있으면 다음에
-  modal(updateNotice(), () => store.set('seenUpdate', UPDATE_VER));
-}
 
 function showDeck() {
   if (!S) return;
@@ -133,66 +137,132 @@ function showDeck() {
 $('#deckBtn').onclick = showDeck;
 
 // ---------- 소켓 ----------
-socket.on('catalog', d => { CARDS = d.cards; CONFIG = d.config; BASE = d.base; if (!S) boot(); });
+// 기기에 기억: 반(이름·학급 비밀번호), 번호, 기기 표시(같은 기기에서 새로고침하면 그대로 다시 들어가게)
+let CHOICE = [];
+const myToken = (() => { let t = store.get('cardToken'); if (!t) { t = Math.random().toString(36).slice(2) + Date.now().toString(36); store.set('cardToken', t); } return t; })();
+socket.on('catalog', d => { CARDS = d.cards; CONFIG = d.config; BASE = d.base; CHOICE = d.choice || []; if (!S) boot(); });
 socket.on('state', st => { S = st; render(); });
-socket.on('kicked', msg => { S = null; store.del('login'); toast(msg, 4000); local.screen = 'classes'; render(); });
-socket.on('disconnect', () => toast('연결이 끊겼어요. 다시 연결하는 중…', 3000));
-socket.on('connect', () => { const L = store.get('login'); if (S && L) socket.emit('join', L, () => {}); });
+socket.on('kicked', msg => { S = null; store.del('cardNum'); toast(msg, 4000); local.screen = 'numbers'; render(); });
+socket.on('classClosed', msg => { S = null; store.del('cardClass'); store.del('cardNum'); toast(msg, 4000); local.screen = 'classes'; render(); });
+socket.on('classList', list => { if (!S && local.screen === 'classes') { local.list = list; drawClassList(); } });
+socket.on('disconnect', () => { if (!idleOff) toast('연결이 끊겼어요. 다시 연결하는 중…', 3000); });
+socket.on('connect', () => { if (S) boot(); });
 
+// QR 코드로 들어오면 주소에 반 이름이 붙어 있어요 (?c=반이름)
+const qrClass = new URLSearchParams(location.search).get('c');
+if (qrClass) history.replaceState(null, '', location.pathname);
 function boot() {
-  const L = store.get('login');
-  if (L) socket.emit('join', L, r => { if (!r.ok) { store.del('login'); local.screen = 'classes'; render(); } });
-  else render();
+  const C = store.get('cardClass');
+  if (qrClass && (!C || C.name !== qrClass) && !local.qrUsed) {    // QR로 다른 반에 들어온 경우: 비밀번호부터
+    local.qrUsed = true; store.del('cardNum'); local.pick = qrClass; local.screen = 'pw'; return render();
+  }
+  if (!C) { local.screen = 'classes'; return render(); }
+  socket.emit('joinClass', C, r => {
+    if (!r.ok) {
+      store.del('cardClass'); store.del('cardNum'); S = null;
+      if (r.badPw) { local.pick = C.name; local.screen = 'pw'; local.pwMsg = '학급 비밀번호가 바뀌었어요. 다시 입력해 주세요.'; }
+      else { local.screen = 'classes'; if (r.msg) toast(r.msg, 3000); }
+      return render();
+    }
+    const num = store.get('cardNum');
+    if (!num) { S = null; local.screen = 'numbers'; return render(); }
+    socket.emit('join', { num, token: myToken }, j => { if (!j.ok) { store.del('cardNum'); S = null; if (j.msg) toast(j.msg, 3000); local.screen = 'numbers'; render(); } });
+  });
 }
 
 // ---------- 화면 그리기 ----------
 function render() {
   clearInterval(timerInt);
   $('#deckBtn').classList.toggle('hidden', !S || ['battle', 'lobby', 'inherit'].includes(S.stage));
-  if (!S) { setBg(1); return local.screen === 'numbers' ? renderNumbers() : renderClasses(); }
+  $('#teacherLink').classList.toggle('hidden', !!S || local.screen !== 'classes');   // 첫 화면(반 찾기)에서만 보임
+  if (!S) { setBg(1); return ({ numbers: renderNumbers, pw: renderPw }[local.screen] || renderClasses)(); }
   if (S.stage === 'queue' || S.stage === 'battle') setBg(4);
   else if (S.stage === 'problem') { if (S.problem && S.problem.id !== lastProblemId) { lastProblemId = S.problem.id; nextProblemBg(); } }
   else if (!bgNow || bgNow === 4) setBg(1);
   ({ lobby: renderLobby, problem: renderProblem, offer: renderOffer, ready: renderReady, queue: renderQueue,
      battle: renderBattle, result: renderResult, inherit: renderInherit }[S.stage] || renderLobby)();
-  maybeShowUpdate();
 }
 const topbar = () => `<div class="topbar"><span class="big">${esc(S.code)} · ${S.num}번 모험가</span>
   <span class="progress">카드 ${S.deck.length}/${CONFIG.DECK_SIZE}<span class="pbar"><i style="width:${S.deck.length / CONFIG.DECK_SIZE * 100}%"></i></span></span></div>`;
 const hero = sub => `<div class="hero"><div class="emblem"></div><h1 class="title">던전 카드 모험</h1><p class="sub">${sub}</p></div>`;
+const panelTitle = t => `<h2 class="title" style="font-size:clamp(20px,calc(var(--vh)*4),32px);margin-bottom:calc(var(--vh)*2)">${t}</h2>`;
 
+// 1) 반 찾기
 function renderClasses() {
-  socket.emit('classes', null, list => {
-    app.innerHTML = `<div class="screen">${hero('비례식의 미궁에 도전하라')}
-      <div class="panel"><h2 class="title" style="font-size:clamp(20px,calc(var(--vh)*4),32px);margin-bottom:calc(var(--vh)*2)">우리 반을 골라 주세요</h2>
-      <div class="class-list">${list.length ? list.map(c => `<button class="class-btn" data-code="${esc(c.code)}">${esc(c.code)}</button>`).join('') : '<p class="sub">아직 열린 반이 없어요. 선생님을 기다려 주세요.</p>'}</div>
-      <div class="row" style="margin-top:calc(var(--vh)*2.4)"><button class="btn dark" id="refresh">새로고침</button></div></div></div>`;
-    app.querySelectorAll('[data-code]').forEach(b => b.onclick = () => { tryLandscape(); local.code = b.dataset.code; local.screen = 'numbers'; render(); });
-    $('#refresh').onclick = render;
-  });
+  app.innerHTML = `<div class="screen">${hero('수학의 미궁에 도전하라')}
+    <div class="panel">${panelTitle('우리 반을 찾아 눌러 주세요')}
+    <input id="find" class="find" placeholder="반 이름 검색" autocomplete="off">
+    <div class="class-list" id="clist"></div>
+    <div class="row" style="margin-top:calc(var(--vh)*2.4)"><button class="btn dark" id="refresh">새로고침</button></div></div></div>`;
+  $('#find').oninput = drawClassList;
+  $('#refresh').onclick = () => socket.emit('browse', l => { local.list = l; drawClassList(); });
+  socket.emit('browse', l => { local.list = l; drawClassList(); });
 }
+function drawClassList() {
+  const box = $('#clist'); if (!box) return;
+  const q = ($('#find').value || '').replace(/\s/g, '').toLowerCase();
+  const list = (local.list || []).filter(n => n.toLowerCase().includes(q));
+  box.innerHTML = list.length ? list.map(n => `<button class="class-btn" data-code="${esc(n)}">${esc(n)}</button>`).join('')
+    : `<p class="sub">${(local.list || []).length ? '찾는 반이 없어요.' : '아직 열린 반이 없어요. 선생님을 기다려 주세요.'}</p>`;
+  box.querySelectorAll('[data-code]').forEach(b => b.onclick = () => { tryLandscape(); local.pick = b.dataset.code; local.pwMsg = ''; local.screen = 'pw'; render(); });
+}
+// 2) 학급 비밀번호
+function renderPw() {
+  app.innerHTML = `<div class="screen">${hero(esc(local.pick) + ' 반에 들어가요')}
+    <div class="panel center-panel">${panelTitle('학급 비밀번호를 입력해 주세요')}
+    <div class="ans" style="justify-content:center"><input id="spw" autocomplete="off" placeholder="비밀번호"><button class="btn" id="ok">들어가기</button></div>
+    <div class="fb bad" id="pwMsg">${esc(local.pwMsg || '')}</div>
+    <div class="row"><button class="btn dark" id="back">반 다시 고르기</button></div></div></div>`;
+  const inp = $('#spw'); inp.focus();
+  const go = () => { const pw = inp.value.trim(); if (!pw) return;
+    socket.emit('joinClass', { name: local.pick, pw }, r => {
+      if (r.ok) { store.set('cardClass', { name: r.name, pw }); store.del('cardNum'); local.screen = 'numbers'; render(); }
+      else if (r.noClass) { toast(r.msg, 3000); local.screen = 'classes'; render(); }
+      else { $('#pwMsg').textContent = r.msg; inp.select(); $('.center-panel').classList.add('shake'); setTimeout(() => $('.center-panel') && $('.center-panel').classList.remove('shake'), 400); }
+    }); };
+  $('#ok').onclick = go; inp.onkeydown = e => { if (e.key === 'Enter') go(); };
+  $('#back').onclick = () => { local.screen = 'classes'; render(); };
+}
+// 3) 번호
 function renderNumbers() {
-  socket.emit('numbers', { code: local.code }, list => {
-    if (!list) { local.screen = 'classes'; return render(); }
-    app.innerHTML = `<div class="screen">${hero(esc(local.code) + ' · 내 번호를 눌러 주세요')}
-      <div class="panel"><div class="num-grid">${list.map(s => `<button class="num" data-n="${s.num}" ${s.online ? 'disabled' : ''}>${s.num}<small>${s.online ? '접속 중' : s.cards > 6 ? s.cards + '장' : ''}</small></button>`).join('')}</div>
-      <div class="row" style="margin-top:calc(var(--vh)*2.4)"><button class="btn dark" id="back">반 다시 고르기</button></div></div></div>`;
+  socket.emit('numbers', d => {
+    if (!d) return boot();   // 반에서 빠져 있으면 다시 들어가기
+    app.innerHTML = `<div class="screen">${hero(esc(d.name) + ' · 내 번호를 눌러 주세요')}
+      <div class="panel"><div class="num-grid">${d.list.map(s => `<button class="num" data-n="${s.num}" ${s.online ? 'disabled' : ''}>${s.num}<small>${s.online ? '접속 중' : s.cards > 6 ? s.cards + '장' : ''}</small></button>`).join('')}</div>
+      <div class="row" style="margin-top:calc(var(--vh)*2.4)"><button class="btn dark" id="back">반 바꾸기</button></div></div></div>`;
     app.querySelectorAll('[data-n]').forEach(b => b.onclick = () => {
       tryLandscape();
-      const L = { code: local.code, num: Number(b.dataset.n) };
-      socket.emit('join', L, r => { if (r.ok) store.set('login', L); else { toast(r.msg); render(); } });
+      const num = Number(b.dataset.n);
+      socket.emit('join', { num, token: myToken }, r => { if (r.ok) store.set('cardNum', num); else { toast(r.msg); if (r.needClass) boot(); else render(); } });
     });
-    $('#back').onclick = () => { local.screen = 'classes'; render(); };
+    $('#back').onclick = () => { socket.emit('leaveClass'); store.del('cardClass'); store.del('cardNum'); local.screen = 'classes'; render(); };
   });
 }
 function renderLobby() {
+  const unitLine = isGame() ? '오늘은 문제 없이 카드만 골라요' : `오늘의 단원: ${S.units.map(esc).join(', ')}`;
   app.innerHTML = `<div class="screen">${hero(`${esc(S.code)} ${S.num}번 모험가, 미궁의 입구에 섰습니다.`)}
-    <div class="panel center-panel"><p class="sub" style="font-size:clamp(16px,calc(var(--vh)*3),24px)">${isGame() ? '카드를 한 장씩 골라' : '문제를 풀 때마다 카드를 얻고'}<br>18장의 덱으로 친구와 겨루세요.</p>
+    <div class="panel center-panel"><p class="unit-line">${unitLine}</p>
+    <p class="sub" style="font-size:clamp(16px,calc(var(--vh)*3),24px)">${isGame() ? '카드를 한 장씩 골라' : '문제를 풀 때마다 카드를 얻고'}<br>18장의 덱으로 친구와 겨루세요.</p>
     <button class="btn huge" id="go">모험 시작</button>
-    <div class="row" style="margin-top:calc(var(--vh)*3)"><button class="btn dark" id="out">번호 바꾸기</button></div></div></div>`;
-  $('#go').onclick = () => { tryLandscape(); modal(howtoGame(), () => socket.emit('start')); };
-  $('#out').onclick = () => { store.del('login'); location.reload(); };
+    <div class="row" style="margin-top:calc(var(--vh)*3)"><button class="btn dark" id="guide">게임 방법·카드 소개</button><button class="btn dark" id="out">번호 바꾸기</button></div></div></div>`;
+  $('#go').onclick = () => { tryLandscape(); showGuide('모험 시작!', () => socket.emit('start')); };
+  $('#guide').onclick = () => showGuide('닫기');
+  $('#out').onclick = () => { socket.emit('leaveNum'); store.del('cardNum'); S = null; local.screen = 'numbers'; render(); };
 }
+
+// ---------- 무료 서버 시간 아끼기: 20분 동안 아무것도 누르지 않으면 연결을 쉬고, 누르면 다시 연결 ----------
+const IDLE_MS = 20 * 60 * 1000;
+let lastInput = Date.now(), idleOff = false;
+['pointerdown', 'keydown'].forEach(ev => document.addEventListener(ev, () => {
+  lastInput = Date.now();
+  if (idleOff) { idleOff = false; $('#idle').classList.add('hidden'); socket.connect(); }
+}, true));
+setInterval(() => {
+  if (idleOff || Date.now() - lastInput < IDLE_MS) return;
+  if (S && ['battle', 'queue'].includes(S.stage)) return;   // 대결 중이거나 상대를 기다리는 중이면 계속 연결
+  idleOff = true; $('#idle').classList.remove('hidden'); socket.disconnect();
+}, 60000);
+
 // ---------- 연습장 (펜/손가락으로 풀이 적기) ----------
 // 획을 0~1 비율 좌표로 저장해서 화면 크기가 바뀌어도 그대로 다시 그려요. 문제가 바뀌면 지워져요.
 const scratch = { pid: null, strokes: [], tool: 'white', penSeen: false };
@@ -249,7 +319,13 @@ function renderProblem() {
   const p = S.problem; if (!p) return;
   const answer = p.options
     ? `<div class="opts ${p.options.some(o => o.replace(/<[^>]+>/g, '').length > 9) ? 'wide' : ''}">${p.options.map((svg, i) => `<button class="opt" data-i="${i}"><span class="no">${'①②③④'[i]}</span>${svg}</button>`).join('')}</div>`
-    : `<div class="ans"><input id="in" inputmode="decimal" autocomplete="off" placeholder="?"><span>${esc(p.unit)}</span><button class="btn" id="ok">확인</button></div>`;
+    : p.input === 'frac'
+      // 분수 답: 자연수(대분수일 때만) + 분자/분모 칸. 자연수 답이면 자연수 칸만 써요
+      ? `<div class="ans frac-ans"><input id="fw" class="fw" inputmode="numeric" autocomplete="off" placeholder="자연수">
+          <span class="frin"><input id="fn" inputmode="numeric" autocomplete="off" placeholder="분자"><i></i><input id="fd" inputmode="numeric" autocomplete="off" placeholder="분모"></span>
+          <span>${esc(p.unit)}</span><button class="btn" id="ok">확인</button></div>
+         <p class="frac-hint">기약분수로 써요. 대분수가 아니면 자연수 칸은 비워 두세요.</p>`
+      : `<div class="ans"><input id="in" inputmode="decimal" autocomplete="off" placeholder="?"><span>${esc(p.unit)}</span><button class="btn" id="ok">확인</button></div>`;
   if (scratch.pid !== p.id) { scratch.pid = p.id; scratch.strokes = []; }   // 새 문제면 연습장을 비움 (같은 문제에서 오답 후 다시 그려져도 유지)
   const noFig = !p.figs || !p.figs.length;   // 그림이 없는 문제(선택형 등)는 그림 칸을 빼고 연습장을 넓게 (여러 식을 계산해야 해서)
   const lefty = !!store.get('lefty');   // 왼손잡이 설정은 이 기기에 기억해 둠 (연습장이 왼쪽으로 옴)
@@ -266,12 +342,19 @@ function renderProblem() {
       </div>
       <canvas id="pad"></canvas>
     </div>
-    <div class="panel q-panel" id="qp"><span class="qtag">${esc(p.label)}</span><p class="qtext">${p.text}</p>${answer}
+    <div class="panel q-panel" id="qp"><span class="qtag">${p.chapter ? esc(p.chapter) + ' · ' : ''}${esc(p.label)}</span><p class="qtext">${p.text}</p>${answer}
       <div class="fb ${S.feedback ? 'bad' : ''}">${S.feedback ? '아쉬워요! 다시 풀어 보세요.' : ''}</div></div>
   </div></div>`;
   if (S.feedback && Date.now() - S.feedback.at < 1500) $('#qp').classList.add('shake');
   initPad();
   if (p.options) app.querySelectorAll('.opt').forEach(b => b.onclick = () => socket.emit('answer', { value: b.dataset.i }));
+  else if (p.input === 'frac') {
+    const ins = ['#fw', '#fn', '#fd'].map(id => $(id));
+    const go = () => { const [w, n, d] = ins.map(x => x.value.trim()); if (w || n || d) socket.emit('answer', { value: `${w}|${n}|${d}` }); };
+    $('#ok').onclick = go;
+    ins.forEach((x, i) => x.onkeydown = e => { if (e.key === 'Enter') { if (i === 1 && !ins[2].value.trim()) ins[2].focus(); else go(); } });
+    ins[1].focus();
+  }
   else { const inp = $('#in'); inp.focus(); const go = () => { if (inp.value.trim()) socket.emit('answer', { value: inp.value }); };
     $('#ok').onclick = go; inp.onkeydown = e => { if (e.key === 'Enter') go(); }; }
 }
