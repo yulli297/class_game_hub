@@ -184,7 +184,7 @@ function render() {
 }
 const topbar = () => `<div class="topbar"><span class="big">${esc(S.code)} · ${S.num}번 모험가</span>
   <span class="progress">카드 ${S.deck.length}/${CONFIG.DECK_SIZE}<span class="pbar"><i style="width:${S.deck.length / CONFIG.DECK_SIZE * 100}%"></i></span></span></div>`;
-const hero = sub => `<div class="hero"><div class="emblem"></div><h1 class="title">던전 카드 모험</h1><p class="sub">${sub}</p></div>`;
+const hero = sub => `<div class="hero"><div class="emblem"></div><h1 class="title">수학 카드 대전</h1><p class="sub">${sub}</p></div>`;
 const panelTitle = t => `<h2 class="title" style="font-size:clamp(20px,calc(var(--vh)*4),32px);margin-bottom:calc(var(--vh)*2)">${t}</h2>`;
 
 // 1) 반 찾기

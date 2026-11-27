@@ -5,7 +5,7 @@
 | 주소 | 게임 | 교사 화면 |
 |---|---|---|
 | `https://내주소.onrender.com/` | 게임 고르는 첫 화면 (왼쪽 아래 **교사모드**) | |
-| `https://내주소.onrender.com/card/` | **던전 카드 모험** — 6학년 수학 12개 단원 문제로 카드를 모아 1:1 대결 | `/card/teacher` |
+| `https://내주소.onrender.com/card/` | **수학 카드 대전** — 6학년 수학 12개 단원 문제로 카드를 모아 1:1 대결 | `/card/teacher` |
 | `https://내주소.onrender.com/chosung/` | **초성 퀴즈** — 개인전 · 모둠 대항전 | `/chosung/teacher` |
 | `https://내주소.onrender.com/catchmind/` | **스케치북 캐치마인드** — 친구 그림 보고 제시어 맞히기 | `/catchmind/teacher` |
 
@@ -43,7 +43,7 @@
 |---|---|
 | `server.js` | 게임들을 하나로 묶는 서버 (주소 나누기, 실시간 연결 통로 나누기) |
 | `public/` | 게임 고르는 첫 화면 |
-| `card/` | 던전 카드 모험 (`card/적용방법.md`에 자세한 사용법) |
+| `card/` | 수학 카드 대전 (`card/적용방법.md`에 자세한 사용법) |
 | `card/game/units/` | 6학년 수학 단원별 문제 만들기 |
 | `chosung/` | 초성 퀴즈 (`chosung/적용방법.md`에 자세한 사용법) |
 | `catchmind/` | 스케치북 캐치마인드 (`catchmind/적용방법.md`에 자세한 사용법) |

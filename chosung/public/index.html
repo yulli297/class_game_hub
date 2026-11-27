@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>한글날 초성 퀴즈</title>
+<title>초성 퀴즈</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -109,7 +109,7 @@ tr.meRow td{color:#ffd166;font-weight:700}
 
     <div id="center">
       <div class="screen" id="scClass">
-        <div class="big">한글날 초성 퀴즈</div>
+        <div class="big">초성 퀴즈</div>
         <div class="small" style="margin-top:1vmin">우리 반을 찾아서 눌러 주세요</div>
         <div class="row">
           <input id="classSearch" class="chalkInput" type="text" maxlength="12" placeholder="반 이름 찾기" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
@@ -450,7 +450,7 @@ function clearTop() { $('label').textContent = ''; $('words').innerHTML = ''; $(
 function renderLogin() {
   show('Login');
   $('loginClass').textContent = S.name;
-  $('loginTitle').textContent = isTeam() ? '모둠 대항전 초성 퀴즈' : '한글날 초성 퀴즈';
+  $('loginTitle').textContent = isTeam() ? '모둠 대항전 초성 퀴즈' : '초성 퀴즈';
   $('loginHint').textContent = isTeam() ? `우리 모둠 번호를 쓰고 입장하세요 (모둠당 태블릿 1대, 1~${S.maxNum})` : `내 번호를 쓰고 입장하세요 (1~${S.maxNum})`;
   const inp = $('numInput');
   inp.max = S.maxNum;
