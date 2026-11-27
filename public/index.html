@@ -24,6 +24,8 @@
   .chosung h2{color:#fdf8e8}.chosung .go{background:#f4f1e8;color:#2f5a3a}
   .catchmind{background:linear-gradient(160deg,#fffdf9,#efe4d3);border:2px solid #5d4037;color:#3e2c23}
   .catchmind h2{color:#5d4037}.catchmind .go{background:#e07a5f;color:#fff}
+  .relay{background:linear-gradient(160deg,#fbf6ea,#e8dcc2);border:2px solid #3f5a7a;color:#2b3442}
+  .relay h2{color:#3f5a7a}.relay .go{background:#3f5a7a;color:#fff}
   .teacher{position:fixed;left:2vw;bottom:3vh;color:#cfc6b6;font-size:clamp(13px,2.2vh,17px);background:rgba(0,0,0,.35);border:1px dashed rgba(255,255,255,.35);
     border-radius:8px;padding:1vh 1.4vw;text-decoration:none;cursor:pointer}
   .tmenu{position:fixed;left:2vw;bottom:9vh;display:none;flex-direction:column;gap:8px;background:#2a2533;border:1px solid #555;border-radius:10px;padding:10px}
@@ -49,9 +51,14 @@
       <p class="desc">친구가 그리는 그림을 보고<br>제시어를 빨리 맞혀요!</p>
       <span class="go">입장하기</span>
     </a>
+    <a class="game relay" href="relay/">
+      <h2>릴레이 이야기 짓기</h2>
+      <p class="desc">앞 친구의 문장만 보고 한 문장씩 이어 써요.<br>특수 단어를 몰래 넣어 볼까요?</p>
+      <span class="go">입장하기</span>
+    </a>
   </div>
   <a class="teacher" id="tbtn">교사모드</a>
-  <div class="tmenu" id="tmenu"><a href="card/teacher">수학 카드 대전 · 교사 화면</a><a href="chosung/teacher">초성 퀴즈 · 교사 화면</a><a href="catchmind/teacher">캐치마인드 · 교사 화면</a></div>
+  <div class="tmenu" id="tmenu"><a href="card/teacher">수학 카드 대전 · 교사 화면</a><a href="chosung/teacher">초성 퀴즈 · 교사 화면</a><a href="catchmind/teacher">캐치마인드 · 교사 화면</a><a href="relay/teacher">릴레이 이야기 짓기 · 교사 화면</a></div>
   <script>document.getElementById('tbtn').onclick = () => document.getElementById('tmenu').classList.toggle('on');</script>
 </body>
 </html>

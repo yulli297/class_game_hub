@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>릴레이 이야기 짓기</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- 1. 반 이름 + 학급 비밀번호 -->
+  <section id="view-class" class="view">
+    <div class="screen narrow">
+      <header class="appbar">
+        <div class="brand"><i class="ic" data-ic="book"></i>릴레이 이야기 짓기</div>
+        <div class="right"><a class="pill" href="../"><i class="ic" data-ic="home" style="width:16px;height:16px"></i>홈으로</a></div>
+      </header>
+      <div class="screen-body center">
+        <i class="ic hero" data-ic="book"></i>
+        <h1 class="title">우리 반의 이야기를<br>함께 만들어봐요!</h1>
+        <p class="sub">반 이름과 비밀번호를 입력하고 입장하세요</p>
+        <form id="form-class" class="form-narrow" autocomplete="off">
+          <div class="ifield"><i class="ic" data-ic="users"></i><input id="class-name" type="text" maxlength="12" placeholder="반 이름을 입력하세요" /></div>
+          <div class="ifield"><i class="ic" data-ic="lock"></i><input id="classpw-input" type="text" maxlength="20" placeholder="학급 비밀번호를 입력하세요" /></div>
+          <p id="class-msg" class="err"></p>
+          <button type="submit" class="btn primary lg" style="align-self:center">입장하기 ›</button>
+        </form>
+        <div id="class-list" class="class-list"></div>
+      </div>
+    </div>
+    <a class="corner-btn" href="teacher">교사모드</a>
+  </section>
+
+  <!-- 2. 이름 -->
+  <section id="view-name" class="view">
+    <div class="screen narrow">
+      <header class="appbar">
+        <div class="brand"><i class="ic" data-ic="book"></i>릴레이 이야기 짓기</div>
+        <div class="right"><span class="pill" id="name-class"></span></div>
+      </header>
+      <div class="screen-body center">
+        <h1 class="title" style="font-size:30px">내 이름을 알려 주세요</h1>
+        <p class="sub">잠깐 끊겨도 같은 이름으로 들어오면 원래 자리로 이어져요.</p>
+        <form id="form-name" class="form-narrow" autocomplete="off">
+          <div class="ifield"><i class="ic" data-ic="user"></i><input id="name-input" type="text" maxlength="10" placeholder="예: 김철수" /></div>
+          <p id="name-msg" class="err"></p>
+          <button type="submit" class="btn primary lg" style="align-self:center">입장하기 ›</button>
+          <button type="button" class="btn ghost" id="btn-change-class">반 바꾸기</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 대기실 -->
+  <section id="view-lobby" class="view">
+    <div class="screen">
+      <header class="appbar">
+        <div class="brand"><i class="ic" data-ic="book"></i>릴레이 이야기 짓기</div>
+        <div class="right"><span class="pill" id="lobby-class"></span><button class="btn ghost sm" id="btn-change-name" type="button">이름 바꾸기</button></div>
+      </header>
+      <div class="screen-body center">
+        <i class="ic hero" data-ic="book"></i>
+        <h1 class="title">친구들이 모이고 있어요!</h1>
+        <p class="sub">선생님이 시작하면 4명씩 모둠이 정해져요.<br>앞 친구의 문장만 보고 한 문장씩 이어 써요.</p>
+        <p class="help"><b id="lobby-me"></b> · 지금 <b id="lobby-count">0</b>명</p>
+        <div id="lobby-grid" class="chips" style="max-width:820px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 이야기 쓰기 -->
+  <section id="view-play" class="view">
+    <div class="screen">
+      <header class="appbar">
+        <div class="brand"><i class="ic" data-ic="book"></i>릴레이 이야기 짓기</div>
+        <div class="right"><span class="pill" id="p-group"></span></div>
+      </header>
+      <!-- 내 차례 -->
+      <div class="screen-body hidden" id="panel-write" style="justify-content:center;gap:6px">
+        <div class="write-top">
+          <div class="bubble"><span class="lab" id="prev-label">이전 문장</span><div class="txt" id="prev-box"></div></div>
+          <div class="ring" id="w-ring"></div>
+        </div>
+        <div class="mission hidden" id="mission">
+          <div class="m1">이 단어를 꼭 넣어요!</div>
+          <div class="m2"><span id="mission-word"></span><span class="ok hidden" id="mission-ok">✓ 넣었어요</span></div>
+        </div>
+        <form id="form-write" autocomplete="off">
+          <div class="write-area">
+            <textarea id="w-input" maxlength="60" placeholder="다음 이야기를 입력하세요!"></textarea>
+            <span class="count" id="w-count">0 / 60</span>
+          </div>
+          <div class="write-foot"><span class="err" id="w-msg"></span>
+            <button class="btn primary lg" id="w-send" type="submit"><i class="ic" data-ic="send"></i>제출하기</button></div>
+        </form>
+      </div>
+      <!-- 다른 친구 차례 -->
+      <div class="screen-body center hidden" id="panel-wait">
+        <span class="sparkle"><i class="ic glass flip" data-ic="glass"></i></span>
+        <div class="wait-big" id="wait-title">다음 차례를 기다리고 있어요!</div>
+        <div class="left-pill" id="wait-mine"></div>
+        <div class="writing-now"><span id="wait-who"></span><div class="ring mid" id="o-ring"></div></div>
+      </div>
+      <!-- 멈춤 -->
+      <div class="screen-body center hidden" id="panel-paused">
+        <div style="font-size:64px">⏸</div>
+        <div class="wait-big">잠깐 멈췄어요</div>
+        <p class="sub" id="paused-why"></p>
+      </div>
+      <!-- 우리 모둠 끝 -->
+      <div class="screen-body center hidden" id="panel-done">
+        <div class="check-badge"><i class="ic" data-ic="check" style="width:50px;height:50px"></i></div>
+        <div class="wait-big">우리 모둠 이야기 완성!</div>
+        <p class="sub">다른 모둠이 다 쓰면 선생님 화면(TV)에서<br>한 문장씩 공개해요. 어떤 이야기가 됐을까요?</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. 구경 / TV 보기 -->
+  <section id="view-watch" class="view">
+    <div class="screen narrow">
+      <header class="appbar"><div class="brand"><i class="ic" data-ic="book"></i>릴레이 이야기 짓기</div></header>
+      <div class="screen-body center" style="padding-bottom:40px">
+        <div style="font-size:64px" id="watch-icon">📺</div>
+        <h1 class="title" id="watch-title">TV를 보세요</h1>
+        <p class="sub" id="watch-sub"></p>
+      </div>
+    </div>
+  </section>
+
+  <div id="modal-idle" class="modal hidden">
+    <div class="card">
+      <h3>접속을 끊었어요</h3>
+      <p class="help" id="idle-msg">15분 동안 화면을 누르지 않아서 서버 접속을 끊었어요. 다시 들어가면 같은 이름으로 이어져요.</p>
+      <button id="btn-reconnect" class="btn primary" type="button">다시 들어가기</button>
+    </div>
+  </div>
+  <div id="netbar" class="netbar hidden">연결이 끊겼어요. 다시 연결하는 중… (쓰던 글은 그대로 있어요)</div>
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="common.js"></script>
+  <script>
+  const socket = io('/relay');
+  let S = null, joined = false, me = null, picking = '', classNames = [], idleOff = false, offset = 0;
+  let cls = localStorage.getItem('rlClass') || '';
+  let token = localStorage.getItem('rlToken');
+  if (!token) { token = Math.random().toString(36).slice(2) + Date.now().toString(36); localStorage.setItem('rlToken', token); }
+  const pwKey = n => 'rlClassPw:' + String(n).toLowerCase();
+  const nameKey = n => 'rlName:' + String(n).toLowerCase();
+
+  // ---------- 반 찾기 / 학급 비밀번호 ----------
+  const urlClass = (new URLSearchParams(location.search).get('c') || '').replace(/\s/g, '');
+  if (urlClass) { cls = urlClass; history.replaceState(null, '', location.pathname); }
+  function browse() { socket.emit('browse', list => { classNames = list || []; renderClassList(); }); }
+  socket.on('classList', list => { classNames = list || []; renderClassList(); });
+  function renderClassList() {
+    $('class-list').innerHTML = classNames.length
+      ? '<span class="help" style="width:100%">열려 있는 반 (눌러서 고르기)</span>' + classNames.map(n => `<button class="class-btn" type="button" data-c="${esc(n)}">${esc(n)}</button>`).join('')
+      : '<span class="help">아직 열린 반이 없어요. 선생님이 반을 열 때까지 기다려 주세요.</span>';
+  }
+  $('class-list').addEventListener('click', e => { const b = e.target.closest('[data-c]'); if (b) pickClass(b.dataset.c); });
+  function joinClass(name, pw, silent) {
+    socket.emit('joinClass', { name, pw }, res => {
+      if (res && res.ok) {
+        cls = res.name; joined = true; picking = '';
+        localStorage.setItem('rlClass', cls); localStorage.setItem(pwKey(cls), pw);
+        $('class-msg').textContent = '';
+        const saved = localStorage.getItem(nameKey(cls));
+        if (saved) login(saved, true);
+      } else {
+        joined = false; S = null; me = null;
+        picking = res && res.noClass ? '' : name;
+        if (!(res && res.noClass)) localStorage.removeItem(pwKey(name));
+        $('class-msg').textContent = silent ? '' : ((res && res.msg) || '들어가지 못했어요. 다시 해 보세요.');
+      }
+      render();
+    });
+  }
+  // 반 이름을 고르면: 전에 들어간 반이면 바로 입장, 아니면 비밀번호 칸으로
+  function pickClass(name) {
+    const saved = localStorage.getItem(pwKey(name));
+    if (saved) return joinClass(name, saved, true);
+    picking = name; $('class-name').value = name; $('classpw-input').value = ''; $('class-msg').textContent = '';
+    render(); setTimeout(() => $('classpw-input').focus(), 50);
+  }
+  $('form-class').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = $('class-name').value.replace(/\s/g, '');
+    const pw = $('classpw-input').value.trim() || localStorage.getItem(pwKey(name)) || '';
+    if (!name) { $('class-msg').textContent = '반 이름을 입력해 주세요.'; return; }
+    if (!pw) { $('class-msg').textContent = '학급 비밀번호를 입력해 주세요.'; return; }
+    joinClass(name, pw, false);
+  });
+  $('btn-change-class').onclick = () => { socket.emit('leaveClass'); joined = false; S = null; me = null; picking = ''; render(); };
+
+  // ---------- 이름 ----------
+  function login(name, auto) {
+    socket.emit('studentLogin', { name, token }, res => {
+      if (res && res.ok) {
+        me = res.name; localStorage.setItem(nameKey(cls), me); $('name-msg').textContent = '';
+        if (res.resumed && auto) toast(`${me}(으)로 다시 연결됐어요.`);
+      } else {
+        me = null;
+        if (res && res.needClass) joined = false;
+        $('name-input').value = name;
+        $('name-msg').textContent = (res && res.msg) || '입장하지 못했어요. 다시 해 보세요.';
+      }
+      render();
+    });
+  }
+  $('form-name').addEventListener('submit', e => {
+    e.preventDefault();
+    const n = $('name-input').value.trim();
+    if (!n) { $('name-msg').textContent = '이름을 입력해 주세요.'; return; }
+    login(n, false);
+  });
+  $('btn-change-name').onclick = () => { socket.emit('studentLogout'); localStorage.removeItem(nameKey(cls)); me = null; render(); };
+
+  // ---------- 연결 ----------
+  let autoJoin = !!cls;
+  socket.on('connect', () => {
+    $('netbar').classList.add('hidden');
+    const saved = cls ? localStorage.getItem(pwKey(cls)) : null;
+    if (cls && (joined || autoJoin)) {
+      if (saved) joinClass(cls, saved, true);
+      else if (autoJoin && urlClass) pickClass(cls);
+    }
+    autoJoin = false;
+    if (!joined) browse();
+  });
+  socket.on('disconnect', () => { if (!idleOff) $('netbar').classList.remove('hidden'); });
+  socket.on('idleOff', () => { idleOff = true; $('netbar').classList.add('hidden'); $('modal-idle').classList.remove('hidden'); });
+  $('btn-reconnect').onclick = () => { idleOff = false; $('modal-idle').classList.add('hidden'); autoJoin = !!cls; socket.connect(); };
+  socket.on('replaced', msg => { idleOff = true; joined = false; S = null; me = null; $('idle-msg').textContent = msg; $('modal-idle').classList.remove('hidden'); render(); });
+  socket.on('kicked', msg => { localStorage.removeItem(nameKey(cls)); me = null; $('name-msg').textContent = msg; render(); });
+  socket.on('classClosed', reason => {
+    joined = false; S = null; me = null; localStorage.removeItem(nameKey(cls));
+    $('class-msg').textContent = reason || '반이 닫혔어요.'; render();
+  });
+  socket.on('toast', m => toast(m));
+  socket.on('state', s => { S = s; offset = s.serverNow - Date.now(); if (s.me) me = s.me.name; render(); });
+  let lastAct = 0;
+  ['pointerdown', 'keydown', 'touchstart'].forEach(ev => window.addEventListener(ev, () => {
+    const now = Date.now();
+    if (now - lastAct > 20000 && socket.connected) { lastAct = now; socket.emit('activity'); }
+  }, { passive: true, capture: true }));
+
+  // ---------- 쓰기 ----------
+  // 차례 번호(seq)를 꼭 같이 보내요. 서버는 지나간 차례의 신호를 무시해요.
+  let turnKey = '', seq = 0, timeUp = false, sending = false;
+  let draftSent = '', draftT = null;
+  function sendDraft(now) {
+    clearTimeout(draftT); draftT = null;
+    const text = $('w-input').value;
+    if (!S || !S.myTurn || (!now && text === draftSent)) return;
+    draftSent = text;
+    if (socket.connected) socket.emit('draft', { seq, text });
+  }
+  function queueDraft() { if (!draftT) draftT = setTimeout(() => sendDraft(false), 1500); }
+  $('w-input').addEventListener('input', () => { updateCount(); queueDraft(); $('w-msg').textContent = ''; });
+  $('w-input').addEventListener('compositionend', () => { updateCount(); queueDraft(); });
+  // 엔터는 줄바꿈 대신 제출 (한글 조합 중에는 무시)
+  $('w-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); if (!e.isComposing) $('form-write').requestSubmit(); }
+  });
+  function updateCount() {
+    const v = $('w-input').value;
+    $('w-count').textContent = `${[...v].length} / ${S ? S.maxLen : 60}`;
+    if (S && S.word) $('mission-ok').classList.toggle('hidden', !squash(v).includes(squash(S.word)));
+  }
+  $('form-write').addEventListener('submit', e => {
+    e.preventDefault();
+    if (timeUp || sending || !S || !S.myTurn) return;
+    const text = $('w-input').value.trim();
+    if (!text) { $('w-msg').textContent = '문장을 써 주세요.'; return; }
+    sending = true; $('w-send').disabled = true;
+    socket.timeout(8000).emit('submitSentence', { seq, text }, (err, res) => {
+      sending = false; $('w-send').disabled = timeUp;
+      if (err) { $('w-msg').textContent = '연결이 불안정해요. 다시 눌러 주세요.'; return; }
+      if (res && res.ok) return; // 서버가 다음 차례로 넘기면서 화면이 바뀌어요
+      if (res && res.bad) {
+        $('w-msg').textContent = '바른 말로 고쳐 써요.';
+        const f = $('form-write'); f.classList.remove('shake'); void f.offsetWidth; f.classList.add('shake');
+        return;
+      }
+      if (res && res.msg) $('w-msg').textContent = res.msg;
+    });
+  });
+
+  // ---------- 화면 ----------
+  function render() {
+    if (!joined) {
+      if (picking && !$('class-name').value) $('class-name').value = picking;
+      renderClassList(); showView('view-class');
+      return;
+    }
+    if (!S) return;
+    if (!me || !S.me) {
+      $('name-class').textContent = S.name;
+      if (!$('view-name').classList.contains('active')) {
+        const saved = localStorage.getItem(nameKey(cls));
+        if (saved && !$('name-input').value) $('name-input').value = saved;
+      }
+      showView('view-name');
+      return;
+    }
+    if (S.status === 'lobby') return renderLobby();
+    if (S.status === 'reveal') return watch('📺', 'TV를 보세요', '선생님 화면에서 모둠 이야기를 한 문장씩 공개하고 있어요.');
+    if (S.spectator) return watch('👀', '이번 판은 구경해요', '이야기 쓰기가 이미 시작됐어요. 다음 판에 모둠에 들어가요.');
+    renderPlay();
+  }
+  function watch(icon, title, sub) {
+    $('watch-icon').textContent = icon; $('watch-title').textContent = title; $('watch-sub').textContent = sub;
+    showView('view-watch');
+  }
+  function renderLobby() {
+    showView('view-lobby');
+    $('lobby-class').textContent = S.name;
+    $('lobby-me').textContent = `나: ${S.me.name}`;
+    const list = S.students || [];
+    $('lobby-count').textContent = list.filter(s => s.connected).length;
+    $('lobby-grid').innerHTML = list.map(s => `<span class="chip ${s.connected ? '' : 'off'} ${s.sid === S.me.sid ? 'me' : ''}">${esc(s.name)}</span>`).join('');
+  }
+  function renderPlay() {
+    showView('view-play');
+    const g = S.group;
+    const n = g.members.length, laps = Math.round(g.turns / n);
+    $('p-group').textContent = g.done ? `${g.name} · 완성!` : `${g.name} · ${Math.min(laps, Math.floor(g.idx / n) + 1)}/${laps}바퀴`;
+    const mode = g.done ? 'done' : g.paused ? 'paused' : S.myTurn ? 'write' : 'wait';
+    ['write', 'wait', 'paused', 'done'].forEach(p => $('panel-' + p).classList.toggle('hidden', p !== mode));
+    if (mode === 'paused') {
+      $('paused-why').textContent = g.paused === 'teacher' ? '선생님이 잠깐 멈췄어요. 곧 이어서 해요.' : '모둠 친구들의 연결이 모두 끊겨서 멈췄어요. 누군가 돌아오면 이어서 해요.';
+    }
+    if (mode === 'write') {
+      const key = `${S.gameId}:${g.gi}:${g.turnSeq}`;
+      if (key !== turnKey) { // 새 차례
+        turnKey = key; seq = g.turnSeq; timeUp = false; sending = false;
+        $('w-input').value = S.draft || ''; draftSent = $('w-input').value;
+        $('w-input').disabled = false; $('w-send').disabled = false; $('w-msg').textContent = '';
+        setTimeout(() => $('w-input').focus(), 50);
+      } else {
+        if (!$('w-input').value && S.draft) $('w-input').value = S.draft; // 다시 연결됐을 때 쓰던 글 되살리기
+        if (timeUp && secLeft(g.turnEnd, offset) > 0) { // 멈췄다가 이어진 경우: 다시 쓸 수 있게
+          timeUp = false; $('w-input').disabled = false; $('w-send').disabled = false; $('w-msg').textContent = '';
+        }
+      }
+      $('prev-label').textContent = S.prevIsFirst ? '첫 문장' : '이전 문장';
+      $('prev-box').textContent = S.prev;
+      $('mission').classList.toggle('hidden', !S.word);
+      $('mission-word').textContent = S.word || '';
+      $('w-input').maxLength = S.maxLen;
+      updateCount();
+    } else {
+      turnKey = '';
+      if (mode === 'wait') {
+        $('wait-who').textContent = `✏️ ${g.writerName || '친구'} 쓰는 중…`;
+        const my = g.members.findIndex(m => m.sid === S.me.sid);
+        let left = -1;
+        for (let j = g.idx; j < g.turns; j++) if (j % n === my) { left = j - g.idx; break; }
+        $('wait-title').textContent = left === 1 ? '다음이 내 차례예요! 준비해요!' : '다음 차례를 기다리고 있어요!';
+        $('wait-mine').innerHTML = left < 0 ? '내 차례는 모두 끝났어요' : `내 차례까지 <b>${left}명</b> 남았어요`;
+      }
+    }
+    tick();
+  }
+  // 남은 시간 표시 (차례를 넘기는 건 서버만 해요. 여기서는 보여 주기만)
+  function tick() {
+    if (!S || S.status !== 'writing' || !S.group) return;
+    const g = S.group;
+    const sec = g.paused ? Math.ceil(g.pausedRemain / 1000) : secLeft(g.turnEnd, offset);
+    if (S.myTurn && !g.paused) {
+      ring($('w-ring'), sec, S.turnSec);
+      if (sec === 0 && !timeUp) {
+        timeUp = true;
+        sendDraft(true); // 마지막으로 쓴 데까지 서버에 보냄 → 서버가 그 글로 제출
+        $('w-input').disabled = true; $('w-send').disabled = true;
+        $('w-msg').textContent = '시간이 끝났어요! 쓴 데까지 제출돼요.';
+      }
+    } else ring($('o-ring'), sec, S.turnSec);
+  }
+  setInterval(tick, 250);
+  render();
+  </script>
+</body>
+</html>
