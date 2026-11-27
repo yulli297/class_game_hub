@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>릴레이 이야기 짓기 · 교사 화면</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="teacher-page">
+  <!-- 1. 교사 공통 접속 비밀번호 -->
+  <section id="view-gate" class="view">
+    <div class="screen narrow">
+      <header class="appbar"><div class="brand"><i class="ic" data-ic="book"></i>릴레이 이야기 짓기 · 교사</div><div class="right"><a class="pill" href="./">학생 화면</a></div></header>
+      <div class="screen-body center">
+        <i class="ic hero" data-ic="book"></i>
+        <h1 class="title">교사모드</h1>
+        <p class="sub">선생님들끼리 공유한 교사 접속 비밀번호를 입력해 주세요.</p>
+        <form id="form-gate" class="form-narrow" autocomplete="off">
+          <div class="ifield"><i class="ic" data-ic="lock"></i><input id="gate-pw" type="password" maxlength="40" placeholder="교사 접속 비밀번호" /></div>
+          <p id="gate-msg" class="err"></p>
+          <button type="submit" class="btn primary lg" style="align-self:center">들어가기 ›</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 반 만들기 / 들어가기 / 관리자 -->
+  <section id="view-auth" class="view scroll">
+    <div class="screen">
+      <header class="appbar"><div class="brand"><i class="ic" data-ic="book"></i>릴레이 이야기 짓기 · 교사</div></header>
+      <div class="screen-body" style="gap:16px">
+        <p class="sub">반 이름으로 우리 반만의 방을 열어요. 다른 반과 섞이지 않아요.</p>
+        <div class="grid2">
+          <form class="card stack" id="form-create" autocomplete="off">
+            <h2 class="h">새 반 만들기</h2>
+            <p class="help">반 이름은 띄어쓰기 없이 한글·영문·숫자 2~12자 (예: 천곡64)<br>
+              <b>학급 비밀번호</b>는 학생들이 들어올 때 입력해요.<br>
+              <b>학급 관리 비밀번호(교사용)</b>는 다른 기기에서 이 반을 관리할 때 써요.</p>
+            <div class="field"><label>반 이름</label><input id="c-name" type="text" maxlength="12" placeholder="예: 천곡64" /></div>
+            <div class="field"><label>학급 비밀번호 (학생용, 2~20자)</label><input id="c-spw" type="text" maxlength="20" placeholder="예: 6464" /></div>
+            <div class="field"><label>학급 관리 비밀번호 (교사용)</label><input id="c-pw" type="password" maxlength="20" placeholder="4~20자" /></div>
+            <div class="field"><label>학급 관리 비밀번호 한 번 더</label><input id="c-pw2" type="password" maxlength="20" /></div>
+            <p id="create-msg" class="err"></p>
+            <button class="btn primary lg" type="submit">반 만들기</button>
+          </form>
+          <form class="card stack" id="form-login" autocomplete="off">
+            <h2 class="h">우리 반 들어가기</h2>
+            <p class="help">이미 만든 반을 다른 기기에서 관리할 때 써요.<br>서버가 다시 켜지면 반이 사라질 수 있어요. 그때는 「새 반 만들기」로 다시 만들어 주세요.</p>
+            <div class="field"><label>열려 있는 반 (눌러서 고르기)</label><div id="open-classes" class="class-list" style="justify-content:flex-start"></div></div>
+            <div class="field"><label>반 이름</label><input id="l-name" type="text" maxlength="12" /></div>
+            <div class="field"><label>학급 관리 비밀번호 (교사용)</label><input id="l-pw" type="password" maxlength="20" /></div>
+            <p id="login-msg" class="err"></p>
+            <button class="btn primary lg" type="submit">들어가기</button>
+          </form>
+        </div>
+        <div class="card hidden" id="admin-card">
+          <h2 class="h">관리자 · 열려 있는 모든 반</h2>
+          <form id="form-admin" class="admin-row" autocomplete="off">
+            <input id="a-pw" type="password" placeholder="관리자 비밀번호" />
+            <button class="btn" type="submit">목록 보기</button>
+          </form>
+          <p id="admin-msg" class="help" style="margin-top:8px"></p>
+          <table id="admin-table" class="admin-table"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 대기실 (설정 + 입장 안내) -->
+  <section id="view-lobby" class="view scroll">
+    <div class="screen">
+      <header class="appbar"><div class="brand"><i class="ic" data-ic="book"></i>릴레이 이야기 짓기 · 교사</div>
+        <div class="right"><span class="pill blue" data-classname></span>
+          <button class="btn ghost sm" data-act="logout" type="button">반 나가기</button>
+          <button class="btn danger sm" data-act="close" type="button">반 닫기</button></div>
+      </header>
+      <div class="screen-body">
+        <div class="grid2">
+          <div class="card stack">
+            <h2 class="h">⚙️ 설정</h2>
+            <div class="field">
+              <label>바퀴 수</label>
+              <div class="radio-row" id="r-laps"></div>
+              <p class="help" id="laps-help"></p>
+            </div>
+            <div class="field">
+              <label for="s-sec">차례당 시간</label>
+              <select id="s-sec"></select>
+            </div>
+            <div class="field">
+              <label>첫 문장</label>
+              <div class="radio-row">
+                <label class="chip-radio"><input type="radio" name="firstMode" value="random" checked /><span>랜덤 (모둠마다 다르게)</span></label>
+                <label class="chip-radio"><input type="radio" name="firstMode" value="custom" /><span>직접 쓰기</span></label>
+              </div>
+              <div id="box-first" class="hidden">
+                <textarea id="s-first" rows="3" placeholder="한 줄에 한 문장씩 써요."></textarea>
+                <p class="help">한 줄만 쓰면 모든 모둠이 같은 문장으로 시작해요 (모둠마다 얼마나 다르게 흘러가는지 비교하기 좋아요). 여러 줄이면 1모둠부터 차례대로 나눠 줘요.</p>
+              </div>
+            </div>
+            <div class="field">
+              <label>특수 단어</label>
+              <div class="radio-row">
+                <label class="chip-radio"><input type="radio" name="wordMode" value="random" checked /><span>기본 목록에서 랜덤</span></label>
+                <label class="chip-radio"><input type="radio" name="wordMode" value="custom" /><span>직접 쓰기</span></label>
+              </div>
+              <div id="box-words" class="hidden">
+                <textarea id="s-words" rows="3" placeholder="쉼표나 줄바꿈으로 구분 (예: 공룡, 떡볶이, 교장 선생님)"></textarea>
+                <p class="help">지금 인식된 단어 <b id="words-count">0</b>개 · 모자라면 같은 단어가 다른 차례에 다시 나올 수 있어요.</p>
+              </div>
+            </div>
+            <div class="field">
+              <label for="s-bad">더 막을 말 (선택)</label>
+              <input id="s-bad" type="text" placeholder="쉼표로 구분 · 우리 반에서 쓰는 놀림말 등" />
+            </div>
+            <p class="help" id="save-msg"></p>
+          </div>
+          <div class="card">
+            <div class="addr" id="addr"></div>
+            <h2 class="h">접속한 학생 <span id="lobby-count"></span></h2>
+            <p class="help" id="group-preview"></p>
+            <div id="lobby-grid" class="chips" style="margin:12px 0;justify-content:flex-start"></div>
+            <p id="start-msg" class="err"></p>
+            <button id="btn-start" class="btn primary lg" type="button" style="width:100%">랜덤 모둠으로 시작하기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 쓰는 중 (진행 상황) -->
+  <section id="view-progress" class="view">
+    <div class="screen">
+      <header class="appbar"><div class="brand"><i class="ic" data-ic="book"></i>릴레이 이야기 짓기 · 교사</div><div class="right"><span class="pill" id="pg-info"></span><span class="pill blue" data-classname></span></div></header>
+      <div class="screen-body">
+        <div class="overall">
+          <div class="row"><span id="ov-title">전체 진행 중</span><span id="ov-count"></span></div>
+          <div class="bar"><i id="ov-bar" style="width:0"></i></div>
+        </div>
+        <div class="groups" id="groups"></div>
+        <p class="help" id="spectators" style="margin-top:10px"></p>
+        <div class="card" style="margin-top:12px;padding:12px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><b id="flag-title">비속어 기록 0건</b><button class="btn sm" id="btn-flags" type="button">기록 보기</button></div>
+          <div class="flag-list hidden" id="flag-list"></div>
+        </div>
+      </div>
+      <div class="ctrlbar">
+        <button class="btn primary" id="btn-pause-all" type="button">⏸ 전체 일시정지</button>
+        <button class="btn primary" id="btn-resume-all" type="button">▶ 전체 재개</button>
+        <span class="spacer"></span>
+        <span class="help" style="align-self:center">이 화면에는 이야기 내용이 안 보여요 (TV에 띄워도 괜찮아요)</span>
+        <button class="btn warn" id="btn-reveal" type="button">🏁 공개 시작</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. 공개 (TV) -->
+  <section id="view-reveal" class="view">
+    <div class="screen">
+      <header class="appbar"><div class="brand"><i class="ic" data-ic="book"></i>릴레이 이야기 짓기 · 교사</div><div class="right" id="tabs"></div></header>
+      <div class="screen-body" style="padding-top:0">
+        <div class="ribbon" id="ribbon">1모둠의 이야기</div>
+        <div class="story-card" id="story-card">
+          <button class="btn sm ghost hide-btn" id="btn-hide" type="button">가리기</button>
+          <div class="story-prev" id="story-prev"></div>
+          <div class="story-now" id="story-now"></div>
+          <div class="story-who" id="story-who"></div>
+          <div class="story-list hidden" id="story-list"></div>
+          <div id="story-badge"></div>
+        </div>
+        <div class="story-foot">
+          <div class="next-actions">
+            <button class="btn sm" id="btn-all" type="button">📖 전체 이야기</button>
+            <button class="btn sm" id="btn-save" type="button" disabled title="모든 모둠을 끝까지 보면 눌러져요">💾 저장</button>
+            <button class="btn sm" id="btn-again" type="button">같은 모둠 한 판 더</button>
+            <button class="btn sm" id="btn-regroup" type="button">모둠 새로 짜기</button>
+            <button class="btn sm" id="btn-lobby" type="button">대기실로</button>
+          </div>
+          <div class="pager">
+            <button class="btn round" id="btn-prev" type="button">‹</button>
+            <span id="story-count"></span>
+            <button class="btn round" id="btn-next2" type="button">›</button>
+          </div>
+          <button class="btn primary lg" id="btn-next" type="button">다음 문장 보기 ▶</button>
+        </div>
+        <p class="err" id="again-msg"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 모든 이야기 완성 -->
+  <div id="modal-done" class="modal hidden">
+    <div class="card done-card">
+      <div class="confetti" id="confetti"></div>
+      <div class="check-badge"><i class="ic" data-ic="check" style="width:50px;height:50px"></i></div>
+      <h2 class="title" style="font-size:30px">모든 이야기가 완성되었어요!</h2>
+      <p class="sub" style="font-size:18px">우리 반이 만든 멋진 이야기를<br>지금 확인해 보세요!</p>
+      <button class="save-btn" id="btn-save2" type="button"><i class="ic" data-ic="file"></i>이야기 텍스트 저장하기<i class="ic" data-ic="down"></i></button>
+      <button class="btn primary lg" id="btn-done-ok" type="button" style="min-width:180px">확인</button>
+    </div>
+  </div>
+
+  <!-- QR 크게 보기 -->
+  <div id="qr-big" class="qr-big hidden" title="누르면 닫혀요">
+    <div class="qbox"><img id="qr-big-img" alt="반 입장 QR 코드" /></div>
+    <div class="qinfo">QR 코드를 찍거나<br><span id="qr-url"></span> 에서<br>반 <b id="qr-name"></b> 을 찾고<br>학급 비밀번호 <b id="qr-pw"></b> 입력</div>
+  </div>
+  <div id="modal-idle" class="modal hidden">
+    <div class="card">
+      <h3>접속을 끊었어요</h3>
+      <p class="help">15분 동안 화면을 누르지 않아서 서버 접속을 끊었어요. 반과 학생 기록은 그대로 있어요.</p>
+      <button id="btn-reconnect" class="btn primary" type="button">다시 연결하기</button>
+    </div>
+  </div>
+  <div id="netbar" class="netbar hidden">서버 연결이 끊겼어요. 다시 연결하는 중…</div>
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="common.js"></script>
+  <script>
+  const socket = io('/relay');
+  let SI = null, S = null, INFO = null, inClass = false, offset = 0, idleOff = false;
+  let auth = null;
+  try { auth = JSON.parse(localStorage.getItem('rlTeacher') || 'null'); } catch (e) { auth = null; }
+  let gate = localStorage.getItem('rlGate') || '';
+  function saveAuth(a) { auth = a; if (a) localStorage.setItem('rlTeacher', JSON.stringify(a)); else localStorage.removeItem('rlTeacher'); }
+
+  // ---------- 공통 비밀번호 / 반 만들기 / 들어가기 ----------
+  function showAuth(msg) {
+    inClass = false; S = null; INFO = null;
+    $('qr-big').classList.add('hidden');
+    if (!gate) { showView('view-gate'); $('gate-msg').textContent = msg || ''; setTimeout(() => $('gate-pw').focus(), 50); return; }
+    showView('view-auth'); browseOpen();
+    $('login-msg').textContent = msg || '';
+    if (auth && !$('l-name').value) $('l-name').value = auth.name;
+    $('admin-card').classList.toggle('hidden', !(SI && SI.adminEnabled));
+  }
+  let openList = [];
+  function renderOpen() {
+    $('open-classes').innerHTML = openList.length
+      ? openList.map(n => `<button type="button" class="class-btn small" data-oc="${esc(n)}">${esc(n)}</button>`).join('')
+      : '<span class="help">지금 열려 있는 반이 없어요.</span>';
+  }
+  function browseOpen() { socket.emit('browse', l => { openList = l || []; renderOpen(); }); }
+  socket.on('classList', l => { openList = l || []; renderOpen(); });
+  $('open-classes').addEventListener('click', e => { const b = e.target.closest('[data-oc]'); if (b) { $('l-name').value = b.dataset.oc; $('l-pw').focus(); } });
+  function gateFailed(res) {
+    if (!res || !res.gate) return false;
+    gate = ''; localStorage.removeItem('rlGate'); showAuth(res.msg); return true;
+  }
+  $('form-gate').addEventListener('submit', e => {
+    e.preventDefault();
+    const g = $('gate-pw').value.trim();
+    if (!g) { $('gate-msg').textContent = '접속 비밀번호를 입력해 주세요.'; return; }
+    socket.emit('teacherGate', { gate: g }, res => {
+      if (!res.ok) { $('gate-msg').textContent = res.msg; return; }
+      gate = g; localStorage.setItem('rlGate', g); $('gate-pw').value = ''; showAuth('');
+    });
+  });
+  function enter(a) {
+    socket.emit('teacherJoin', a, res => {
+      if (res && res.ok) { inClass = true; document.querySelectorAll('[data-classname]').forEach(el => el.textContent = res.name); }
+      else { saveAuth(null); showAuth(res && res.msg); }
+    });
+  }
+  $('form-create').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = $('c-name').value.replace(/\s/g, ''), pw = $('c-pw').value, spw = $('c-spw').value.trim();
+    if (pw !== $('c-pw2').value) { $('create-msg').textContent = '학급 관리 비밀번호 두 칸이 서로 달라요.'; return; }
+    $('create-msg').textContent = '';
+    socket.emit('createClass', { gate, name, pw, spw }, res => {
+      if (gateFailed(res)) return;
+      if (!res.ok) { $('create-msg').textContent = res.msg; return; }
+      $('c-spw').value = ''; $('c-pw').value = $('c-pw2').value = '';
+      saveAuth({ name: res.name, token: res.token }); enter(auth);
+    });
+  });
+  $('form-login').addEventListener('submit', e => {
+    e.preventDefault(); $('login-msg').textContent = '';
+    socket.emit('teacherLogin', { gate, name: $('l-name').value.replace(/\s/g, ''), pw: $('l-pw').value }, res => {
+      if (gateFailed(res)) return;
+      if (!res.ok) { $('login-msg').textContent = res.msg; return; }
+      $('l-pw').value = ''; saveAuth({ name: res.name, token: res.token }); enter(auth);
+    });
+  });
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-act]'); if (!b) return;
+    if (b.dataset.act === 'logout') {
+      if (!confirm('이 기기에서 반 관리를 그만할까요?\n반은 그대로 열려 있어요.')) return;
+      socket.emit('teacherLogout', { token: auth && auth.token }); saveAuth(null); showAuth('');
+    } else if (b.dataset.act === 'close') {
+      if (!confirm(`「${S ? S.name : ''}」 반을 닫을까요?\n학생들도 모두 나가게 돼요.`)) return;
+      socket.emit('closeClass', () => {});
+    }
+  });
+
+  // ---------- 관리자 ----------
+  let adminPw = '';
+  const PH = { lobby: '대기실', writing: '쓰는 중', reveal: '공개 중' };
+  function adminLoad() {
+    socket.emit('adminList', { pw: adminPw }, res => {
+      if (!res.ok) { $('admin-msg').textContent = res.msg; $('admin-table').innerHTML = ''; return; }
+      $('admin-msg').textContent = `열린 반 ${res.list.length}개 / 최대 ${res.max}개`;
+      $('admin-table').innerHTML = `<tr><th>반 이름</th><th>상태</th><th>접속 학생</th><th>교사</th><th>연 지</th><th>마지막 사용</th><th></th></tr>` +
+        res.list.map(c => `<tr><td>${esc(c.name)}</td><td>${PH[c.status] || c.status}</td><td>${c.students}</td><td>${c.teachers}</td><td>${c.ageMin}분</td><td>${c.idleMin}분 전</td><td><button class="btn danger sm" data-close="${esc(c.name)}">닫기</button></td></tr>`).join('');
+    });
+  }
+  $('form-admin').addEventListener('submit', e => { e.preventDefault(); adminPw = $('a-pw').value; adminLoad(); });
+  $('admin-table').addEventListener('click', e => {
+    const name = e.target.dataset && e.target.dataset.close;
+    if (!name || !confirm(`「${name}」 반을 닫을까요?`)) return;
+    socket.emit('adminClose', { pw: adminPw, name }, res => { if (!res.ok) $('admin-msg').textContent = res.msg; adminLoad(); });
+  });
+
+  // ---------- 서버 신호 ----------
+  socket.on('connect', () => { $('netbar').classList.add('hidden'); if ($('view-auth').classList.contains('active')) browseOpen(); });
+  socket.on('disconnect', () => { if (!idleOff) $('netbar').classList.remove('hidden'); });
+  socket.on('serverInfo', info => { SI = info; if (auth) enter(auth); else showAuth(''); });
+  socket.on('teacherInfo', info => { INFO = info; addrKey = ''; fillSettings(); render(); });
+  socket.on('state', s => { S = s; offset = s.serverNow - Date.now(); render(); });
+  socket.on('classClosed', reason => { saveAuth(null); showAuth(reason || '반이 닫혔어요.'); });
+  socket.on('toast', m => toast(m, 5000));
+  socket.on('idleOff', () => { idleOff = true; $('netbar').classList.add('hidden'); $('modal-idle').classList.remove('hidden'); });
+  $('btn-reconnect').onclick = () => { idleOff = false; $('modal-idle').classList.add('hidden'); socket.connect(); };
+  let lastAct = 0;
+  ['pointerdown', 'keydown', 'touchstart'].forEach(ev => window.addEventListener(ev, () => {
+    const now = Date.now();
+    if (now - lastAct > 20000 && socket.connected) { lastAct = now; socket.emit('activity'); }
+  }, { passive: true, capture: true }));
+
+  // ---------- 설정 ----------
+  let filled = false;
+  function fillSettings() {
+    if (!INFO) return;
+    const st = INFO.settings;
+    if (!filled) {
+      $('r-laps').innerHTML = INFO.laps.map(n => `<label class="chip-radio"><input type="radio" name="laps" value="${n}" /><span>${n}바퀴</span></label>`).join('');
+      $('s-sec').innerHTML = INFO.turnSecs.map(n => `<option value="${n}">${n}초${n === 30 ? ' (기본)' : ''}</option>`).join('');
+      document.querySelectorAll('input[name=laps]').forEach(r => r.addEventListener('change', saveSettings));
+      filled = true;
+    }
+    document.querySelectorAll('input[name=laps]').forEach(r => { r.checked = +r.value === st.laps; });
+    $('s-sec').value = String(st.turnSec);
+    document.querySelectorAll('input[name=firstMode]').forEach(r => { r.checked = r.value === st.firstMode; });
+    document.querySelectorAll('input[name=wordMode]').forEach(r => { r.checked = r.value === st.wordMode; });
+    if (document.activeElement !== $('s-first')) $('s-first').value = st.firstText;
+    if (document.activeElement !== $('s-words')) $('s-words').value = st.wordText;
+    if (document.activeElement !== $('s-bad')) $('s-bad').value = st.extraBad;
+    modeUI();
+  }
+  function countWords() { return new Set($('s-words').value.split(/[,\n]/).map(w => squash(w)).filter(Boolean)).size; }
+  function modeUI() {
+    const laps = +(document.querySelector('input[name=laps]:checked') || {}).value || 2;
+    $('laps-help').textContent = `모둠마다 특수 단어 ${laps * 2}개 · 4명 모둠이면 한 사람이 ${laps}문장씩 써요.`;
+    $('box-first').classList.toggle('hidden', document.querySelector('input[name=firstMode]:checked').value !== 'custom');
+    $('box-words').classList.toggle('hidden', document.querySelector('input[name=wordMode]:checked').value !== 'custom');
+    $('words-count').textContent = countWords();
+  }
+  let saveT = null;
+  function saveSettings() {
+    clearTimeout(saveT); modeUI();
+    const data = {
+      laps: (document.querySelector('input[name=laps]:checked') || {}).value, turnSec: $('s-sec').value,
+      firstMode: document.querySelector('input[name=firstMode]:checked').value, firstText: $('s-first').value,
+      wordMode: document.querySelector('input[name=wordMode]:checked').value, wordText: $('s-words').value,
+      extraBad: $('s-bad').value,
+    };
+    socket.emit('saveSettings', data, res => {
+      $('save-msg').textContent = res && res.ok ? '저장됐어요.' : ((res && res.msg) || '');
+      if (res && res.ok && INFO) Object.assign(INFO.settings, { ...data, laps: +data.laps, turnSec: +data.turnSec });
+    });
+  }
+  const later = () => { clearTimeout(saveT); saveT = setTimeout(saveSettings, 600); };
+  $('s-sec').addEventListener('change', saveSettings);
+  document.querySelectorAll('input[name=firstMode],input[name=wordMode]').forEach(r => r.addEventListener('change', saveSettings));
+  $('s-first').addEventListener('input', later);
+  $('s-words').addEventListener('input', () => { modeUI(); later(); });
+  $('s-bad').addEventListener('input', later);
+
+  // ---------- 시작 / 진행 ----------
+  function start(regroup, msgEl) {
+    msgEl.textContent = '';
+    socket.emit('startGame', { regroup }, res => { if (!res.ok) msgEl.textContent = res.msg; });
+  }
+  $('btn-start').onclick = () => start(true, $('start-msg'));
+  $('btn-again').onclick = () => { if (confirm('지난번과 같은 모둠으로 새 이야기를 시작할까요?')) start(false, $('again-msg')); };
+  $('btn-regroup').onclick = () => { if (confirm('모둠을 새로 랜덤으로 짜서 시작할까요?')) start(true, $('again-msg')); };
+  $('btn-lobby').onclick = () => { if (confirm('대기실로 갈까요? 지금 이야기는 사라져요. (먼저 「전체 이야기 저장」을 눌러 두세요)')) socket.emit('toLobby'); };
+  $('btn-pause-all').onclick = () => socket.emit('pauseGroups');
+  $('btn-resume-all').onclick = () => socket.emit('resumeGroups');
+  $('btn-reveal').onclick = () => {
+    const left = S.groups.filter(g => !g.done).length;
+    if (left && !confirm(`아직 다 못 쓴 모둠이 ${left}개 있어요. 지금까지 쓴 데까지만 공개할까요?`)) return;
+    socket.emit('startReveal', () => $('toast').classList.add('hidden'));
+  };
+  $('groups').addEventListener('click', e => {
+    const b = e.target.closest('[data-g]'); if (!b) return;
+    const gi = +b.dataset.g, g = S.groups[gi];
+    if (b.dataset.do === 'next') {
+      if (confirm(`${g.name}: ${g.writerName} 차례를 지금까지 쓴 글로 제출하고 다음 차례로 넘길까요?`)) socket.emit('forceNext', { gi, seq: +b.dataset.seq });
+    } else if (b.dataset.do === 'pause') socket.emit('pauseGroups', gi);
+    else if (b.dataset.do === 'resume') socket.emit('resumeGroups', gi);
+  });
+  $('btn-flags').onclick = () => {
+    const show = $('flag-list').classList.contains('hidden');
+    if (show && !confirm('걸린 문장의 원래 내용이 보여요. TV에 띄워 두었다면 먼저 끄세요. 볼까요?')) return;
+    $('flag-list').classList.toggle('hidden', !show);
+    $('btn-flags').textContent = show ? '기록 숨기기' : '기록 보기';
+  };
+  function kick(sid, name) { if (confirm(`${name} 학생을 반에서 내보낼까요?`)) socket.emit('kick', sid); }
+  $('lobby-grid').addEventListener('click', e => { const b = e.target.closest('[data-kick]'); if (b) kick(b.dataset.kick, b.dataset.name); });
+
+  // ---------- 학생 입장 안내 ----------
+  let addrKey = '';
+  const studentUrl = () => location.host + location.pathname.replace(/teacher(\.html)?$/, '').replace(/\/$/, '');
+  function renderAddr() {
+    const spw = INFO ? INFO.spw : '';
+    const key = [S.name, spw].join('|');
+    if (key === addrKey) return;
+    addrKey = key;
+    const qr = 'qr?c=' + encodeURIComponent(S.name);
+    $('addr').innerHTML = `<div class="qr" id="qr-small" title="크게 보기"><img src="${qr}" alt="반 입장 QR 코드"></div>
+      <div class="txt">학생 주소: <b>${esc(studentUrl())}</b><br>
+      반 이름 <b>${esc(S.name)}</b> · 학급 비밀번호 <b>${esc(spw)}</b> <button class="btn sm" id="spw-btn" type="button">바꾸기</button><br>
+      <button class="btn primary sm" id="qr-btn" type="button" style="margin-top:6px">QR 크게 보기 (칠판 화면용)</button></div>`;
+    $('qr-big-img').src = qr; $('qr-url').textContent = studentUrl(); $('qr-name').textContent = S.name; $('qr-pw').textContent = spw;
+  }
+  $('addr').addEventListener('click', e => {
+    if (e.target.closest('#qr-btn') || e.target.closest('#qr-small')) { $('qr-big').classList.remove('hidden'); return; }
+    if (e.target.closest('#spw-btn')) {
+      const v = prompt('새 학급 비밀번호 (띄어쓰기 없이 2~20자)', INFO ? INFO.spw : '');
+      if (v == null) return;
+      socket.emit('setStudentPw', v.trim(), res => { if (!res.ok) alert(res.msg); });
+    }
+  });
+  $('qr-big').onclick = () => $('qr-big').classList.add('hidden');
+
+  // ---------- 화면 ----------
+  function render() {
+    if (!inClass || !S) return;
+    if (S.status === 'lobby') return renderLobby();
+    $('qr-big').classList.add('hidden');
+    if (S.status === 'writing') return renderProgress();
+    if (S.status === 'reveal') return renderReveal();
+  }
+  function groupPreview(n) {
+    if (n < 2) return '학생이 2명 이상 들어와야 시작할 수 있어요.';
+    const count = Math.max(1, Math.floor(n / 4)), sizes = Array(count).fill(0);
+    for (let i = 0; i < n; i++) sizes[i % count]++;
+    const c = {}; sizes.forEach(s => c[s] = (c[s] || 0) + 1);
+    return `지금 ${n}명 → ` + Object.keys(c).sort().map(s => `${s}명 모둠 ${c[s]}개`).join(', ');
+  }
+  function renderLobby() {
+    showView('view-lobby');
+    if (INFO) renderAddr();
+    const on = S.students.filter(s => s.connected).length;
+    $('lobby-count').textContent = `(${on}명)`;
+    $('group-preview').textContent = groupPreview(on);
+    $('lobby-grid').innerHTML = S.students.length ? S.students.map(s =>
+      `<span class="chip ${s.connected ? '' : 'off'}">${esc(s.name)}${s.connected ? '' : ' (자리비움)'}<button class="x" data-kick="${esc(s.sid)}" data-name="${esc(s.name)}" title="내보내기">×</button></span>`).join('')
+      : '<p class="help">아직 들어온 학생이 없어요.</p>';
+  }
+  const GCOL = ['#2563d9', '#8b5cf6', '#22a35a', '#f59e0b', '#06b6d4', '#ef6b8a', '#64748b', '#d97706'];
+  function renderProgress() {
+    showView('view-progress');
+    $('pg-info').textContent = `${S.laps}바퀴 · 차례당 ${S.turnSec}초`;
+    const done = S.groups.filter(g => g.done).length;
+    const sum = S.groups.reduce((a, g) => a + g.idx, 0), tot = S.groups.reduce((a, g) => a + g.turns, 0);
+    $('ov-title').textContent = done === S.groups.length ? '모든 모둠 완성!' : `모둠 ${S.groups.length - done}개 쓰는 중`;
+    $('ov-count').textContent = `${sum} / ${tot} 문장`;
+    $('ov-bar').style.width = Math.round(100 * sum / Math.max(1, tot)) + '%';
+    $('btn-reveal').textContent = done === S.groups.length ? '🏁 공개 시작' : `🏁 공개 시작 (${done}/${S.groups.length} 완성)`;
+    $('groups').innerHTML = S.groups.map(g => {
+      const col = GCOL[g.gi % GCOL.length];
+      const pct = Math.round(100 * g.idx / Math.max(1, g.turns));
+      const tag = g.done ? '<span class="status-tag done">완성 ✓</span>' : g.paused ? `<span class="status-tag pause">멈춤${g.paused === 'empty' ? ' · 모두 끊김' : ''}</span>` : '';
+      const now = g.done ? '<span class="who help">다 썼어요</span>'
+        : `<span class="who"><i class="dot ${g.writerConnected ? '' : 'off'}"></i>${esc(g.writerName)}${g.writerConnected ? '' : ' <small class="help">(끊김·시간은 그대로)</small>'}</span><div class="ring small" data-ring="${g.gi}"></div>`;
+      const acts = g.done ? '' : `<div class="acts">
+          ${g.paused ? `<button class="btn sm" data-g="${g.gi}" data-do="resume">▶ 재개</button>` : `<button class="btn sm" data-g="${g.gi}" data-do="pause">⏸</button>`}
+          <button class="btn sm" data-g="${g.gi}" data-do="next" data-seq="${g.turnSeq}">⏭ 다음 차례로</button></div>`;
+      return `<div class="gcard ${g.paused ? 'paused' : ''}">
+        <div class="head"><span class="gtag" style="background:${col}">${esc(g.name)}</span>${tag}</div>
+        <div class="prog"><div class="bar"><i style="width:${pct}%;background:${col}"></i></div>${g.idx} / ${g.turns} 문장</div>
+        <div class="now">${now}</div>
+        <div class="members">${g.members.map(m => `<span class="${m.sid === g.writerSid ? 'w' : ''}"><i class="dot ${m.connected ? '' : 'off'}"></i>${esc(m.name)}</span>`).join('')}</div>
+        ${acts}</div>`;
+    }).join('');
+    $('spectators').textContent = S.spectators.length ? `구경 중 (다음 판에 들어가요): ${S.spectators.join(', ')}` : '';
+    renderFlags();
+    tick();
+  }
+  function renderFlags() {
+    $('flag-title').textContent = `비속어 기록 ${S.flagged.length}건`;
+    $('flag-list').innerHTML = S.flagged.slice().reverse().map(f =>
+      `<div><b>${esc(f.group)} · ${esc(f.name)}</b> <span class="help">${new Date(f.at).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span><br>${esc(f.text)}</div>`).join('') || '<p class="help">기록이 없어요.</p>';
+  }
+  function tick() {
+    if (!S || S.status !== 'writing') return;
+    document.querySelectorAll('[data-ring]').forEach(el => {
+      const g = S.groups[+el.dataset.ring];
+      if (!g) return;
+      ring(el, g.paused ? Math.ceil(g.pausedRemain / 1000) : secLeft(g.turnEnd, offset), S.turnSec);
+    });
+  }
+  setInterval(tick, 250);
+
+  // ---------- 공개 (TV) ----------
+  // shown = 0이면 첫 문장, 1이면 1번째 학생 문장 … 한 장에 한 문장씩 크게
+  let listMode = false, lastKey = '', doneShownFor = '';
+  function renderReveal() {
+    showView('view-reveal');
+    const gi = S.revealGi, g = S.groups[gi];
+    $('tabs').innerHTML = S.groups.map(x =>
+      `<button class="tab ${x.gi === gi ? 'on' : ''}" data-tab="${x.gi}" type="button">${esc(x.name)}${x.revealedAll ? ' ✓' : ''}</button>`).join('');
+    const allSeen = S.groups.every(x => x.revealedAll);
+    $('btn-save').disabled = !allSeen;
+    if (allSeen && doneShownFor !== String(S.gameId)) {   // 모든 모둠을 다 보면 한 번 축하 창
+      doneShownFor = String(S.gameId);
+      confetti($('confetti')); $('modal-done').classList.remove('hidden');
+    }
+    if (!g) return;
+    $('ribbon').textContent = `${g.name}의 이야기`;
+    const key = `${gi}:${g.shown}`;
+    if (key !== lastKey) { lastKey = key; listMode = false; }
+    $('story-list').classList.toggle('hidden', !listMode);
+    ['story-prev', 'story-now', 'story-who', 'story-badge', 'btn-hide'].forEach(id => $(id).classList.toggle('hidden', listMode));
+    $('btn-all').textContent = listMode ? '🔍 한 문장씩' : '📖 전체 이야기';
+    if (listMode) {
+      $('story-list').innerHTML = `<div class="li first">${esc(g.first)}</div>` + g.sentences.slice(0, g.shown).map(s =>
+        `<div class="li">${s.hidden ? '<i class="help">(선생님이 가린 문장)</i>' : s.wordOk ? markWord(s.text, s.word) : esc(s.text)}<small>${esc(s.name)}</small></div>`).join('');
+    } else {
+      const k = g.shown, cur = k > 0 ? g.sentences[k - 1] : null, prev = k > 1 ? g.sentences[k - 2] : (k === 1 ? { text: g.first } : null);
+      $('story-prev').textContent = prev ? (prev.hidden ? '' : prev.text) : '';
+      const now = $('story-now');
+      now.className = 'story-now' + (cur ? '' : ' first') + (cur && (cur.hidden || cur.empty) ? ' dim' : '');
+      now.innerHTML = !cur ? esc(g.first) : cur.hidden ? '(선생님이 가린 문장이에요)' : cur.wordOk ? markWord(cur.text, cur.word) : esc(cur.text);
+      $('story-who').textContent = cur ? `- ${cur.name} 학생 -` : '';
+      $('story-badge').innerHTML = cur && cur.word ? (cur.wordOk ? '<div class="badge-ok">성공!</div>' : `<div class="badge-fail">✗ ${esc(cur.word)}</div>`) : '';
+      $('btn-hide').classList.toggle('hidden', !cur);
+      $('btn-hide').textContent = cur && cur.hidden ? '다시 보이기' : '가리기';
+    }
+    $('story-count').textContent = `${g.shown} / ${g.sentences.length}`;
+    $('btn-prev').disabled = g.shown <= 0;
+    $('btn-next').disabled = $('btn-next2').disabled = g.shown >= g.sentences.length;
+    $('btn-next').textContent = g.shown >= g.sentences.length ? '이 모둠 끝!' : '다음 문장 보기 ▶';
+  }
+  $('tabs').addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (b) socket.emit('revealPick', +b.dataset.tab); });
+  $('btn-hide').onclick = () => { const g = S.groups[S.revealGi]; if (g && g.shown > 0) socket.emit('toggleHide', { gi: S.revealGi, si: g.shown - 1 }); };
+  $('btn-next').onclick = $('btn-next2').onclick = () => socket.emit('revealStep', 1);
+  $('btn-prev').onclick = () => socket.emit('revealStep', -1);
+  // 전체 이야기: 아직 공개 안 한 문장이 있으면 끝까지 공개하고 목록으로
+  $('btn-all').onclick = () => {
+    const g = S.groups[S.revealGi]; if (!g) return;
+    if (listMode) { listMode = false; return renderReveal(); }
+    if (g.shown < g.sentences.length) { socket.emit('revealAll'); lastKey = `${S.revealGi}:${g.sentences.length}`; }
+    listMode = true; renderReveal();
+  };
+  $('btn-done-ok').onclick = () => $('modal-done').classList.add('hidden');
+  document.addEventListener('keydown', e => {
+    if (!$('view-reveal').classList.contains('active') || /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) return;
+    if (e.key === ' ' || e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); socket.emit('revealStep', 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); socket.emit('revealStep', -1); }
+  });
+  // 전체 이야기를 텍스트 파일로 저장
+  $('btn-save2').onclick = () => $('btn-save').click();
+  $('btn-save').onclick = () => {
+    const d = new Date();
+    const lines = [`[${S.name}] 릴레이 이야기 짓기 — ${d.toLocaleDateString('ko-KR')}`, ''];
+    for (const g of S.groups) {
+      lines.push(`=== ${g.name} (${g.members.map(m => m.name).join(', ')}) ===`);
+      lines.push(`첫 문장: ${g.first}`);
+      g.sentences.forEach((s, i) => {
+        const w = s.word ? ` [특수 단어: ${s.word} ${s.wordOk ? '성공' : '실패'}]` : '';
+        lines.push(`${i + 1}. ${s.hidden ? '(선생님이 가린 문장)' : s.text} — ${s.name}${w}`);
+      });
+      lines.push('');
+    }
+    const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/plain;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `릴레이이야기_${S.name}_${d.getMonth() + 1}월${d.getDate()}일.txt`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  };
+  </script>
+</body>
+</html>
