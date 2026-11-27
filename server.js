@@ -4,6 +4,7 @@
 //      주소/          → 게임 고르는 첫 화면
 //      주소/card/     → 던전 카드 모험 (6학년 수학 카드 대전)   교사: 주소/card/teacher
 //      주소/chosung/  → 초성 퀴즈 (개인전 + 모둠 대항전)        교사: 주소/chosung/teacher
+//      주소/catchmind/ → 스케치북 캐치마인드 (그림 퀴즈)          교사: 주소/catchmind/teacher
 //  · 게임마다 실시간 연결 통로(Socket.io 네임스페이스)를 따로 써서 서로 섞이지 않아요.
 //  · 비밀번호는 Render 환경변수로 넣어요 (두 게임이 같이 씀): TEACHER_PASSWORD, ADMIN_PASSWORD
 //    초성 퀴즈 사전 키: STDICT_KEY (표준국어대사전), OPENDICT_KEY (우리말샘, 비상용)
@@ -28,6 +29,7 @@ process.on('unhandledRejection', e => console.error('[오류]', e));
 const GAMES = [
   { base: '/card', dir: 'card' },
   { base: '/chosung', dir: 'chosung' },
+  { base: '/catchmind', dir: 'catchmind' },
 ];
 
 // 예전 카드게임 주소 이어 주기 (전에는 카드게임이 주소 맨 앞에 있었음 → 인쇄한 QR도 계속 쓸 수 있게)
@@ -50,6 +52,6 @@ app.get('/favicon.ico', (req, res) => res.redirect('/card/img/icon-192.png'));  
 app.use(express.static(path.join(__dirname, 'public')));   // 첫 화면
 
 if (require.main === module) {
-  server.listen(PORT, () => console.log(`수업 게임 모음 서버 실행 중: http://localhost:${PORT}  (카드게임 /card, 초성 퀴즈 /chosung)`));
+  server.listen(PORT, () => console.log(`수업 게임 모음 서버 실행 중: http://localhost:${PORT}  (카드게임 /card, 초성 퀴즈 /chosung, 캐치마인드 /catchmind)`));
 }
 module.exports = { app, server, io };
